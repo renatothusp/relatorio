@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full bg-slate-900 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Unidades Aderidas USP</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        usp: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#026aa7',
+                            800: '#075985',
+                            900: '#0f172a',
+                            gold: '#f59e0b',
+                            goldDark: '#d97706'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body class="h-full font-sans bg-slate-950 text-slate-100 flex flex-col antialiased">
+
+    <header class="border-b border-slate-800 bg-slate-900/90 sticky top-0 z-30 backdrop-blur-md px-4 lg:px-8 py-3">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 max-w-7xl mx-auto">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-amber-500 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-sky-500/20">
+                    <i class="fa-solid font-bold text-lg">USP</i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                        Painel de Compras - Unidades Aderidas
+                        <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">2024 - 2025</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Monitoramento analítico das contratações e adesões de atas da Universidade de São Paulo</p>
+                </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="flex items-center space-x-2">
+                <button id="btnExportCSV" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-2 rounded-lg transition duration-200 flex items-center gap-2 font-medium">
+                    <i class="fa-solid fa-file-csv text-emerald-400 text-sm"></i>
+                    <span>Exportar CSV</span>
+                </button>
+                <button id="btnPrint" onclick="window.print()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-2 rounded-lg transition duration-200 flex items-center gap-2 font-medium">
+                    <i class="fa-solid fa-print text-sky-400 text-sm"></i>
+                    <span>Imprimir</span>
+                </button>
+                <button id="btnReset" onclick="resetFilters()" class="text-xs bg-sky-600 hover:bg-sky-500 text-white font-medium px-3 py-2 rounded-lg transition duration-200 flex items-center gap-2 shadow-lg shadow-sky-600/20">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>Limpar Filtros</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6 space-y-6">
+
+        <!-- KPI Summary Grid -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Total Empenhado -->
+            <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-sky-500/40 transition duration-300">
+                <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-sky-500/10 rounded-full blur-2xl group-hover:bg-sky-500/20 transition duration-300"></div>
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Empenhado</span>
+                    <div class="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center text-base border border-sky-500/20">
+                        <i class="fa-solid fa-brazilian-real-sign"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <div id="kpiTotalEmpenhado" class="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">R$ 0,00</div>
+                    <p id="kpiTotalSubtext" class="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                        <i class="fa-solid fa-chart-line text-emerald-400"></i>
+                        <span>Soma de todos os contratos empenhados</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Total de Processos -->
+            <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-purple-500/40 transition duration-300">
+                <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/20 transition duration-300"></div>
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Processos de Compra</span>
+                    <div class="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-base border border-purple-500/20">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <div id="kpiTotalCompras" class="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">0</div>
+                    <p class="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                        <i class="fa-solid fa-layer-group text-purple-400"></i>
+                        <span>Atas / Licitações ativas</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Unidades Participantes -->
+            <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-amber-500/40 transition duration-300">
+                <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition duration-300"></div>
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Unidades da USP</span>
+                    <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-base border border-amber-500/20">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <div id="kpiTotalUnidades" class="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">0</div>
+                    <p class="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                        <i class="fa-solid fa-graduation-cap text-amber-400"></i>
+                        <span>Faculdades, Institutos e Prefeituras</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Ticket Médio / Média por Item -->
+            <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-emerald-500/40 transition duration-300">
+                <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition duration-300"></div>
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Média por Contrato</span>
+                    <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-base border border-emerald-500/20">
+                        <i class="fa-solid fa-calculator"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <div id="kpiMediaEmpenhado" class="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">R$ 0,00</div>
+                    <p id="kpiTotalItens" class="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                        <i class="fa-solid fa-box text-emerald-400"></i>
+                        <span>0 itens aderidos no filtro</span>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Filter Controls Section -->
+        <section class="glass-panel p-5 rounded-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                    <i class="fa-solid fa-filter text-sky-400"></i>
+                    Filtros de Pesquisa
+                </h2>
+                <span id="recordCountBadge" class="text-xs font-semibold px-3 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                    Mostrando 0 de 0 registros
+                </span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Search Item Description -->
+                <div>
+                    <label for="searchInput" class="block text-xs font-medium text-slate-400 mb-1">Buscar Item / Serviço</label>
+                    <div class="relative">
+                        <input type="text" id="searchInput" placeholder="Ex: Vigilante, Split, Frigobar..." class="w-full bg-slate-900 border border-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-xl px-3 py-2 pl-9 text-xs text-slate-100 placeholder-slate-500 outline-none transition duration-150">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+                    </div>
+                </div>
+
+                <!-- Select Unidade -->
+                <div>
+                    <label for="selectUnidade" class="block text-xs font-medium text-slate-400 mb-1">Unidade USP</label>
+                    <select id="selectUnidade" class="w-full bg-slate-900 border border-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-xl px-3 py-2 text-xs text-slate-100 outline-none transition duration-150">
+                        <option value="">Todas as Unidades</option>
+                    </select>
+                </div>
+
+                <!-- Select Código de Compra -->
+                <div>
+                    <label for="selectCompra" class="block text-xs font-medium text-slate-400 mb-1">Código da Compra / Processo</label>
+                    <select id="selectCompra" class="w-full bg-slate-900 border border-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-xl px-3 py-2 text-xs text-slate-100 outline-none transition duration-150">
+                        <option value="">Todos os Processos</option>
+                    </select>
+                </div>
+
+                <!-- Select Categoria -->
+                <div>
+                    <label for="selectCategoria" class="block text-xs font-medium text-slate-400 mb-1">Categoria do Item</label>
+                    <select id="selectCategoria" class="w-full bg-slate-900 border border-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-xl px-3 py-2 text-xs text-slate-100 outline-none transition duration-150">
+                        <option value="">Todas as Categorias</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Active Filters Pills -->
+            <div id="activeFiltersContainer" class="flex flex-wrap gap-2 pt-1 hidden">
+                <span class="text-xs text-slate-500 self-center mr-1">Filtros ativos:</span>
+                <div id="activeFiltersList" class="flex flex-wrap gap-2"></div>
+            </div>
+        </section>
+
+        <!-- Visualizations Grid -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Top Unidades por Valor (Bar Chart) -->
+            <div class="glass-panel p-5 rounded-2xl lg:col-span-2 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-chart-column text-sky-400"></i>
+                            Top Unidades com Maior Investimento Empenhado
+                        </h3>
+                        <p class="text-xs text-slate-400">Valores acumulados em BRL por Unidade da USP</p>
+                    </div>
+                </div>
+                <div class="h-72 w-full relative">
+                    <canvas id="chartTopUnidades"></canvas>
+                </div>
+            </div>
+
+            <!-- Distribuição por Categoria (Doughnut Chart) -->
+            <div class="glass-panel p-5 rounded-2xl flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-amber-400"></i>
+                            Distribuição por Categoria
+                        </h3>
+                        <p class="text-xs text-slate-400">Proporção dos recursos por tipo de serviço/bem</p>
+                    </div>
+                </div>
+                <div class="h-72 w-full relative flex items-center justify-center">
+                    <canvas id="chartCategorias"></canvas>
+                </div>
+            </div>
+
+            <!-- Evolução de Compras por Processo (Bar Horizontal) -->
+            <div class="glass-panel p-5 rounded-2xl lg:col-span-2 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-cubes text-purple-400"></i>
+                            Total Empenhado por Licitação / Processo de Compra
+                        </h3>
+                        <p class="text-xs text-slate-400">Comparativo dos volumes financeiros por código de compra</p>
+                    </div>
+                </div>
+                <div class="h-64 w-full relative">
+                    <canvas id="chartCodCompras"></canvas>
+                </div>
+            </div>
+
+            <!-- Ranking de Maior Custo Unitário -->
+            <div class="glass-panel p-5 rounded-2xl flex flex-col">
+                <div class="mb-4">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-trophy text-amber-400"></i>
+                        Maiores Contratos / Itens
+                    </h3>
+                    <p class="text-xs text-slate-400">Os 5 itens com maior valor individual</p>
+                </div>
+                <div id="topItemsList" class="space-y-3 flex-1 overflow-y-auto pr-1">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Data Table Section -->
+        <section class="glass-panel rounded-2xl overflow-hidden border border-slate-800">
+            <div class="p-5 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-table-list text-sky-400"></i>
+                        Tabela Detalhada de Adesões
+                    </h2>
+                    <p class="text-xs text-slate-400">Lista completa dos registros de empenho e itens contratados</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label for="pageSizeSelect" class="text-xs text-slate-400">Exibir:</label>
+                    <select id="pageSizeSelect" class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-2 py-1 outline-none">
+                        <option value="10">10 por pág.</option>
+                        <option value="25" selected>25 por pág.</option>
+                        <option value="50">50 por pág.</option>
+                        <option value="100">100 por pág.</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Table Container -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                    <thead class="bg-slate-900/90 text-slate-400 uppercase font-semibold text-[11px] tracking-wider border-b border-slate-800">
+                        <tr>
+                            <th scope="col" class="py-3.5 px-4 cursor-pointer hover:text-white transition" onclick="sortTable('codCompra')">
+                                Proc. Compra <i class="fa-solid fa-sort ml-1 opacity-50"></i>
+                            </th>
+                            <th scope="col" class="py-3.5 px-4 cursor-pointer hover:text-white transition" onclick="sortTable('dataCadastro')">
+                                Data <i class="fa-solid fa-sort ml-1 opacity-50"></i>
+                            </th>
+                            <th scope="col" class="py-3.5 px-4 cursor-pointer hover:text-white transition" onclick="sortTable('siglaUnidadeAde')">
+                                Unidade <i class="fa-solid fa-sort ml-1 opacity-50"></i>
+                            </th>
+                            <th scope="col" class="py-3.5 px-4 cursor-pointer hover:text-white transition" onclick="sortTable('categoria')">
+                                Categoria <i class="fa-solid fa-sort ml-1 opacity-50"></i>
+                            </th>
+                            <th scope="col" class="py-3.5 px-4 cursor-pointer hover:text-white transition" onclick="sortTable('nomuslbem')">
+                                Descrição do Item / Serviço <i class="fa-solid fa-sort ml-1 opacity-50"></i>
+                            </th>
+                            <th scope="col" class="py-3.5 px-4 text-right cursor-pointer hover:text-white transition" onclick="sortTable('valorEmpenhado')">
+                                Valor Empenhado <i class="fa-solid fa-sort ml-1 opacity-50"></i>
+                            </th>
+                            <th scope="col" class="py-3.5 px-4 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-800/60 font-normal">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination Controls -->
+            <div class="p-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900/40">
+                <div id="paginationInfo" class="text-xs text-slate-400">
+                    Exibindo 0 a 0 de 0 registros
+                </div>
+                <div class="flex items-center space-x-1" id="paginationButtons">
+                    <!-- Pagination JS generated buttons -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Detail Modal Dialog -->
+    <div id="detailModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-panel bg-slate-900 border border-slate-700 rounded-2xl max-w-xl w-full p-6 space-y-5 shadow-2xl relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div class="flex items-center space-x-3 border-b border-slate-800 pb-4">
+                <div class="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center text-lg border border-sky-500/20">
+                    <i class="fa-solid fa-circle-info"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">Detalhes do Registro de Empenho</h3>
+                    <p id="modalSubTitle" class="text-xs text-slate-400">Código de Compra: -</p>
+                </div>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <div class="grid grid-cols-2 gap-3 bg-slate-950/50 p-3 rounded-xl border border-slate-800/80">
+                    <div>
+                        <span class="text-slate-500 block uppercase text-[10px] font-semibold">Unidade USP</span>
+                        <span id="modalSigla" class="text-sky-400 font-bold"></span> - <span id="modalNomeUnidade" class="text-slate-200"></span>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 block uppercase text-[10px] font-semibold">Código da Unidade</span>
+                        <span id="modalCodUnidade" class="text-slate-200 font-mono"></span>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 block uppercase text-[10px] font-semibold">Data de Cadastro</span>
+                        <span id="modalData" class="text-slate-200"></span>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 block uppercase text-[10px] font-semibold">Categoria</span>
+                        <span id="modalCategoria" class="inline-block mt-0.5 px-2 py-0.5 rounded text-[10px] font-medium bg-sky-500/10 text-sky-300 border border-sky-500/20"></span>
+                    </div>
+                </div>
+
+                <div>
+                    <span class="text-slate-500 block uppercase text-[10px] font-semibold mb-1">Descrição do Item / Serviço</span>
+                    <p id="modalDescricao" class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-slate-200 leading-relaxed font-mono text-[11px]"></p>
+                </div>
+
+                <div class="bg-emerald-950/30 border border-emerald-500/30 p-4 rounded-xl flex justify-between items-center">
+                    <span class="text-emerald-400 font-semibold uppercase text-[11px]">Valor Empenhado</span>
+                    <span id="modalValor" class="text-emerald-300 font-extrabold text-xl"></span>
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <button onclick="closeModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl transition border border-slate-700">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Raw dataset extracted directly from undAderida.htm
+        const rawData = [
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "1", siglaUnidadeAde: "RUSP", nomeUnidadeAde: "Reitoria da Universidade de São Paulo", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 4092066 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "1", siglaUnidadeAde: "RUSP", nomeUnidadeAde: "Reitoria da Universidade de São Paulo", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 3404056.59 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "1", siglaUnidadeAde: "RUSP", nomeUnidadeAde: "Reitoria da Universidade de São Paulo", nomuslbem: "POSTO 12 HORAS DIÁRIAS - DIURNO - SEGUNDA A SEXTA (1 VIGILANTE COM FOLGUISTA) VIGILANTE DESARMADO", valorEmpenhado: 1990709.68 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "44", siglaUnidadeAde: "IGc", nomeUnidadeAde: "Instituto de Geociências", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 1364022 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "27", siglaUnidadeAde: "ECA", nomeUnidadeAde: "Escola de Comunicações e Artes", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 1818696 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "62", siglaUnidadeAde: "HU", nomeUnidadeAde: "Hospital Universitário", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 5456088 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "62", siglaUnidadeAde: "HU", nomeUnidadeAde: "Hospital Universitário", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 4916970.63 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "62", siglaUnidadeAde: "HU", nomeUnidadeAde: "Hospital Universitário", nomuslbem: "monitoramento e gerenciamento local de imagens - 12 horas diarias - noturno - segunda a domingo", valorEmpenhado: 481287.95 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "101", siglaUnidadeAde: "AGEUSPI", nomeUnidadeAde: "Agência USP Inovação", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 756457.02 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "14", siglaUnidadeAde: "IAG", nomeUnidadeAde: "Instituto de Astronomia, Geofísica e Ciências Atmosféricas", nomuslbem: "monitoramento e gerenciamento local de imagens - 12 horas diarias - diurno - segunda a domingo", valorEmpenhado: 401902.6 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "14", siglaUnidadeAde: "IAG", nomeUnidadeAde: "Instituto de Astronomia, Geofísica e Ciências Atmosféricas", nomuslbem: "monitoramento e gerenciamento local de imagens - 12 horas diarias - noturno - segunda a domingo", valorEmpenhado: 481287.95 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "14", siglaUnidadeAde: "IAG", nomeUnidadeAde: "Instituto de Astronomia, Geofísica e Ciências Atmosféricas", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 756457.02 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "14", siglaUnidadeAde: "IAG", nomeUnidadeAde: "Instituto de Astronomia, Geofísica e Ciências Atmosféricas", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 909348 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "39", siglaUnidadeAde: "EEFE", nomeUnidadeAde: "Escola de Educação Física e Esporte", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 909348 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "39", siglaUnidadeAde: "EEFE", nomeUnidadeAde: "Escola de Educação Física e Esporte", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 378228.51 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "39", siglaUnidadeAde: "EEFE", nomeUnidadeAde: "Escola de Educação Física e Esporte", nomuslbem: "monitoramento e gerenciamento local de imagens - 12 horas diarias - noturno - segunda a domingo", valorEmpenhado: 481287.95 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "87", siglaUnidadeAde: "IRI", nomeUnidadeAde: "Instituto de Relações Internacionais", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 378228.51 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "87", siglaUnidadeAde: "IRI", nomeUnidadeAde: "Instituto de Relações Internacionais", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 454674 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "9", siglaUnidadeAde: "FCF", nomeUnidadeAde: "Faculdade de Ciências Farmacêuticas", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 756457.02 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "9", siglaUnidadeAde: "FCF", nomeUnidadeAde: "Faculdade de Ciências Farmacêuticas", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 909348 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "9", siglaUnidadeAde: "FCF", nomeUnidadeAde: "Faculdade de Ciências Farmacêuticas", nomuslbem: "POSTO 12 HORAS DIÁRIAS - DIURNO - SEGUNDA A SEXTA (1 VIGILANTE COM FOLGUISTA) VIGILANTE DESARMADO", valorEmpenhado: 248838.71 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "8", siglaUnidadeAde: "FFLCH", nomeUnidadeAde: "Faculdade de Filosofia, Letras e Ciências Humanas", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 3404056.59 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "8", siglaUnidadeAde: "FFLCH", nomeUnidadeAde: "Faculdade de Filosofia, Letras e Ciências Humanas", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 4092066 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "8", siglaUnidadeAde: "FFLCH", nomeUnidadeAde: "Faculdade de Filosofia, Letras e Ciências Humanas", nomuslbem: "POSTO 12 HORAS DIÁRIAS - DIURNO - SEGUNDA A SEXTA (1 VIGILANTE COM FOLGUISTA) VIGILANTE DESARMADO", valorEmpenhado: 497677.42 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "47", siglaUnidadeAde: "IP", nomeUnidadeAde: "Instituto de Psicologia", nomuslbem: "POSTO 12 HORAS DIÁRIAS - DIURNO - SEGUNDA A SEXTA (1 VIGILANTE COM FOLGUISTA) VIGILANTE DESARMADO", valorEmpenhado: 248838.71 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "71", siglaUnidadeAde: "MAE", nomeUnidadeAde: "Museu de Arqueologia e Etnologia", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 909348 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "71", siglaUnidadeAde: "MAE", nomeUnidadeAde: "Museu de Arqueologia e Etnologia", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 378228.51 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "41", siglaUnidadeAde: "IB", nomeUnidadeAde: "Instituto de Biociências", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 3182718 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "41", siglaUnidadeAde: "IB", nomeUnidadeAde: "Instituto de Biociências", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 2647599.57 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "49", siglaUnidadeAde: "PUSP-CB", nomeUnidadeAde: "Prefeitura do Campus Capital-Butantã", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 1818696 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "49", siglaUnidadeAde: "PUSP-CB", nomeUnidadeAde: "Prefeitura do Campus Capital-Butantã", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 1512914.04 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "32", siglaUnidadeAde: "MAC", nomeUnidadeAde: "Museu de Arte Contemporânea", nomuslbem: "monitoramento e gerenciamento local de imagens - 12 horas diarias - diurno - segunda a domingo", valorEmpenhado: 401902.6 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "32", siglaUnidadeAde: "MAC", nomeUnidadeAde: "Museu de Arte Contemporânea", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 11346855.3 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "32", siglaUnidadeAde: "MAC", nomeUnidadeAde: "Museu de Arte Contemporânea", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 4546740 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "32", siglaUnidadeAde: "MAC", nomeUnidadeAde: "Museu de Arte Contemporânea", nomuslbem: "monitoramento e gerenciamento local de imagens - 12 horas diarias - noturno - segunda a domingo", valorEmpenhado: 481287.95 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "4", siglaUnidadeAde: "IEE", nomeUnidadeAde: "Instituto de Energia e Ambiente", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 756457.02 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "4", siglaUnidadeAde: "IEE", nomeUnidadeAde: "Instituto de Energia e Ambiente", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 909348 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "35", siglaUnidadeAde: "PRIP", nomeUnidadeAde: "Pró-Reitoria de Inclusão e Pertencimento", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 756457.02 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "93", siglaUnidadeAde: "PRCEU", nomeUnidadeAde: "Pró-Reitoria de Cultura e Extensão Universitária", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 756457.02 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "93", siglaUnidadeAde: "PRCEU", nomeUnidadeAde: "Pró-Reitoria de Cultura e Extensão Universitária", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 909348 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "93", siglaUnidadeAde: "PRCEU", nomeUnidadeAde: "Pró-Reitoria de Cultura e Extensão Universitária", nomuslbem: "monitoramento e gerenciamento local de imagens - 12 horas diarias - diurno - segunda a domingo", valorEmpenhado: 401902.6 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "93", siglaUnidadeAde: "PRCEU", nomeUnidadeAde: "Pró-Reitoria de Cultura e Extensão Universitária", nomuslbem: "monitoramento e gerenciamento local de imagens - 12 horas diarias - noturno - segunda a domingo", valorEmpenhado: 481287.95 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "101", siglaUnidadeAde: "AGEUSPI", nomeUnidadeAde: "Agência USP Inovação", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 909348 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "27", siglaUnidadeAde: "ECA", nomeUnidadeAde: "Escola de Comunicações e Artes", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 1512914.04 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "16", siglaUnidadeAde: "FAU", nomeUnidadeAde: "Faculdade de Arquitetura e Urbanismo e de Design", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 2269371.06 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "16", siglaUnidadeAde: "FAU", nomeUnidadeAde: "Faculdade de Arquitetura e Urbanismo e de Design", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 2728044 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "16", siglaUnidadeAde: "FAU", nomeUnidadeAde: "Faculdade de Arquitetura e Urbanismo e de Design", nomuslbem: "POSTO 12 HORAS DIÁRIAS - DIURNO - SEGUNDA A SEXTA (1 VIGILANTE COM FOLGUISTA) VIGILANTE DESARMADO", valorEmpenhado: 497677.42 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "31", siglaUnidadeAde: "IEB", nomeUnidadeAde: "Instituto de Estudos Brasileiros", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 756457.02 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "31", siglaUnidadeAde: "IEB", nomeUnidadeAde: "Instituto de Estudos Brasileiros", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 454674 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "56", siglaUnidadeAde: "SCS", nomeUnidadeAde: "Superintendência de Comunicação Social", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 378228.51 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "56", siglaUnidadeAde: "SCS", nomeUnidadeAde: "Superintendência de Comunicação Social", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 454674 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "12", siglaUnidadeAde: "FEA", nomeUnidadeAde: "Faculdade de Economia, Administração, Contabilidade e Atuária", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 1134685.53 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "12", siglaUnidadeAde: "FEA", nomeUnidadeAde: "Faculdade de Economia, Administração, Contabilidade e Atuária", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 1364022 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "12", siglaUnidadeAde: "FEA", nomeUnidadeAde: "Faculdade de Economia, Administração, Contabilidade e Atuária", nomuslbem: "monitoramento e gerenciamento local de imagens - 12 horas diarias - diurno - segunda a domingo", valorEmpenhado: 401902.6 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "104", siglaUnidadeAde: "SPPU", nomeUnidadeAde: "Superintendência de Prevenção e Proteção Universitária", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 12103312.32 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "104", siglaUnidadeAde: "SPPU", nomeUnidadeAde: "Superintendência de Prevenção e Proteção Universitária", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 15458916 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "104", siglaUnidadeAde: "SPPU", nomeUnidadeAde: "Superintendência de Prevenção e Proteção Universitária", nomuslbem: "POSTO 12 HORAS DIÁRIAS - DIURNO - SEGUNDA A SEXTA (1 VIGILANTE COM FOLGUISTA) VIGILANTE DESARMADO", valorEmpenhado: 248838.71 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "104", siglaUnidadeAde: "SPPU", nomeUnidadeAde: "Superintendência de Prevenção e Proteção Universitária", nomuslbem: "monitoramento e gerenciamento local de imagens - 12 horas diarias - diurno - segunda a domingo", valorEmpenhado: 2009513 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "104", siglaUnidadeAde: "SPPU", nomeUnidadeAde: "Superintendência de Prevenção e Proteção Universitária", nomuslbem: "monitoramento e gerenciamento local de imagens - 12 horas diarias - noturno - segunda a domingo", valorEmpenhado: 2406439.75 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "104", siglaUnidadeAde: "SPPU", nomeUnidadeAde: "Superintendência de Prevenção e Proteção Universitária", nomuslbem: "posto 44 horas semanais - diurno", valorEmpenhado: 3636465.58 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "104", siglaUnidadeAde: "SPPU", nomeUnidadeAde: "Superintendência de Prevenção e Proteção Universitária", nomuslbem: "posto de 44 horas semanais - segunda a sexta - diuturno", valorEmpenhado: 3892676.66 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "43", siglaUnidadeAde: "IF", nomeUnidadeAde: "Instituto de Física", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 756457.02 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "43", siglaUnidadeAde: "IF", nomeUnidadeAde: "Instituto de Física", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 909348 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "43", siglaUnidadeAde: "IF", nomeUnidadeAde: "Instituto de Física", nomuslbem: "monitoramento e gerenciamento local de imagens - 12 horas diarias - diurno - segunda a domingo", valorEmpenhado: 401902.6 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "43", siglaUnidadeAde: "IF", nomeUnidadeAde: "Instituto de Física", nomuslbem: "monitoramento e gerenciamento local de imagens - 12 horas diarias - noturno - segunda a domingo", valorEmpenhado: 481287.95 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "63", siglaUnidadeAde: "CEPEUSP", nomeUnidadeAde: "Centro de Práticas Esportivas da Universidade de São Paulo", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 2269371.06 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "63", siglaUnidadeAde: "CEPEUSP", nomeUnidadeAde: "Centro de Práticas Esportivas da Universidade de São Paulo", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 2273370 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "38", siglaUnidadeAde: "MZ", nomeUnidadeAde: "Museu de Zoologia", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 2269371.06 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "38", siglaUnidadeAde: "MZ", nomeUnidadeAde: "Museu de Zoologia", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 454674 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "112", siglaUnidadeAde: "EspBras", nomeUnidadeAde: "Espaço Brasiliana", nomuslbem: "monitoramento e gerenciamento local de imagens - 12 horas diarias - noturno - segunda a domingo", valorEmpenhado: 481287.95 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "112", siglaUnidadeAde: "EspBras", nomeUnidadeAde: "Espaço Brasiliana", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 1512914.04 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "112", siglaUnidadeAde: "EspBras", nomeUnidadeAde: "Espaço Brasiliana", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 1364022 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "112", siglaUnidadeAde: "EspBras", nomeUnidadeAde: "Espaço Brasiliana", nomuslbem: "monitoramento e gerenciamento local de imagens - 12 horas diarias - diurno - segunda a domingo", valorEmpenhado: 401902.6 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "38", siglaUnidadeAde: "MZ", nomeUnidadeAde: "Museu de Zoologia", nomuslbem: "posto 44 horas semanais - diurno", valorEmpenhado: 213909.74 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "33", siglaUnidadeAde: "MP", nomeUnidadeAde: "Museu Paulista", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 12859769.34 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "33", siglaUnidadeAde: "MP", nomeUnidadeAde: "Museu Paulista", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 5456088 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "33", siglaUnidadeAde: "MP", nomeUnidadeAde: "Museu Paulista", nomuslbem: "monitoramento e gerenciamento local de imagens - 12 horas diarias - diurno - segunda a domingo", valorEmpenhado: 1607610.4 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "33", siglaUnidadeAde: "MP", nomeUnidadeAde: "Museu Paulista", nomuslbem: "monitoramento e gerenciamento local de imagens - 12 horas diarias - noturno - segunda a domingo", valorEmpenhado: 1925151.8 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado (pirassununga)", valorEmpenhado: 2267563.32 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "posto 12 horas diárias - noturno - segunda a domingo - vigilante desarmado (pirassununga)", valorEmpenhado: 4546740 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "monitoram. e gerenciam. local de imagens-12 horas diarias-diurno-segunda a domingo (pirassununga)", valorEmpenhado: 401948.25 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "monitoram. e gerenciam. local de imagens-12 horas diarias-noturno-segunda a domingo (pirassununga)", valorEmpenhado: 481351.86 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "14", siglaUnidadeAde: "IAG", nomeUnidadeAde: "Instituto de Astronomia, Geofísica e Ciências Atmosféricas", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado (valinhos)", valorEmpenhado: 769165.98 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "14", siglaUnidadeAde: "IAG", nomeUnidadeAde: "Instituto de Astronomia, Geofísica e Ciências Atmosféricas", nomuslbem: "posto 12 horas diárias - noturno - segunda a domingo - vigilante desarmado (valinhos)", valorEmpenhado: 942946.4 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "33", siglaUnidadeAde: "MP", nomeUnidadeAde: "Museu Paulista", nomuslbem: "posto 12 horas diárias - diurno - segunda a sexta (1 vigil. com folguista) vigilante desarmado (itu)", valorEmpenhado: 248838.71 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "33", siglaUnidadeAde: "MP", nomeUnidadeAde: "Museu Paulista", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado (itu)", valorEmpenhado: 3023417.76 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "33", siglaUnidadeAde: "MP", nomeUnidadeAde: "Museu Paulista", nomuslbem: "posto 12 horas diárias - noturno - segunda a domingo - vigilante desarmado (itu)", valorEmpenhado: 1364022 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "44", siglaUnidadeAde: "IGc", nomeUnidadeAde: "Instituto de Geociências", nomuslbem: "posto 12 horas diárias - diurno - segunda a domingo - vigilante desarmado", valorEmpenhado: 756457.02 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "62", siglaUnidadeAde: "HU", nomeUnidadeAde: "Hospital Universitário", nomuslbem: "monitoramento e gerenciamento local de imagens - 12 horas diarias - diurno - segunda a domingo", valorEmpenhado: 803805.2 },
+            { codCompra: "202400106744", dataCadastro: "22/10/2024", codUnidadeAde: "35", siglaUnidadeAde: "PRIP", nomeUnidadeAde: "Pró-Reitoria de Inclusão e Pertencimento", nomuslbem: "POSTO 12 HORAS DIÁRIAS - NOTURNO - SEGUNDA A DOMINGO - VIGILANTE DESARMADO", valorEmpenhado: 909348 },
+            { codCompra: "202400109018", dataCadastro: "25/10/2024", codUnidadeAde: "10", siglaUnidadeAde: "FMVZ", nomeUnidadeAde: "Faculdade de Medicina Veterinária e Zootecnia", nomuslbem: "BAIAS, PIQUETES, CURRAIS, ESTABULOS E/OU INSTALACOES AFINS", valorEmpenhado: 1132460.27 },
+            { codCompra: "202400109018", dataCadastro: "25/10/2024", codUnidadeAde: "74", siglaUnidadeAde: "FZEA", nomeUnidadeAde: "Faculdade de Zootecnia e Engenharia de Alimentos", nomuslbem: "baias, piquetes, currais, estabulos e/ou instalacoes afins (fzea)", valorEmpenhado: 231513.84 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "1", siglaUnidadeAde: "RUSP", nomeUnidadeAde: "Reitoria da Universidade de São Paulo", nomuslbem: "VENTILADOR, COLUNA, D=50CM, PRETO, 127V, HELICE 6 PAS, MINIMO 120W", valorEmpenhado: 5372 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "1", siglaUnidadeAde: "RUSP", nomeUnidadeAde: "Reitoria da Universidade de São Paulo", nomuslbem: "VENTILADOR DE MESA, 50 CM, 06 HELICES, 200W, BIVOLT", valorEmpenhado: 858 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "1", siglaUnidadeAde: "RUSP", nomeUnidadeAde: "Reitoria da Universidade de São Paulo", nomuslbem: "FOGAO DOMESTICO, COOKTOP, ACO INOX, 220V, 4 BOCAS", valorEmpenhado: 2860 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "1", siglaUnidadeAde: "RUSP", nomeUnidadeAde: "Reitoria da Universidade de São Paulo", nomuslbem: "DESUMIDIFICADOR DE AR, EM ACO, 12L/DIA,150M3,500M3/H,290W,110V", valorEmpenhado: 15650 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "1", siglaUnidadeAde: "RUSP", nomeUnidadeAde: "Reitoria da Universidade de São Paulo", nomuslbem: "VENTILADOR, COLUNA, D=50CM, PRETO, 127V, HELICE 6 PAS, MINIMO 120W", valorEmpenhado: 2212 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "1", siglaUnidadeAde: "RUSP", nomeUnidadeAde: "Reitoria da Universidade de São Paulo", nomuslbem: "DESUMIDIFICADOR DE AR, EM ACO, 12L/DIA,150M3,500M3/H,290W,110V", valorEmpenhado: 18780 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "101", siglaUnidadeAde: "AGEUSPI", nomeUnidadeAde: "Agência USP Inovação", nomuslbem: "DESUMIDIFICADOR DE AR, EM ACO, 12L/DIA,150M3,500M3/H,290W,110V", valorEmpenhado: 12520 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "101", siglaUnidadeAde: "AGEUSPI", nomeUnidadeAde: "Agência USP Inovação", nomuslbem: "VENTILADOR DE MESA, 50 CM, 06 HELICES, 200W, BIVOLT", valorEmpenhado: 858 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "101", siglaUnidadeAde: "AGEUSPI", nomeUnidadeAde: "Agência USP Inovação", nomuslbem: "VENTILADOR, COLUNA, D=50CM, PRETO, 127V, HELICE 6 PAS, MINIMO 120W", valorEmpenhado: 948 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "48", siglaUnidadeAde: "FE", nomeUnidadeAde: "Faculdade de Educação", nomuslbem: "DESUMIDIFICADOR DE AR, EM ACO, 12L/DIA,150M3,500M3/H,290W,110V", valorEmpenhado: 21910 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "8", siglaUnidadeAde: "FFLCH", nomeUnidadeAde: "Faculdade de Filosofia, Letras e Ciências Humanas", nomuslbem: "DESUMIDIFICADOR DE AR, EM ACO, 12L/DIA,150M3,500M3/H,290W,110V", valorEmpenhado: 50080 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "52", siglaUnidadeAde: "PUSP-SC", nomeUnidadeAde: "Prefeitura do Campus de São Carlos", nomuslbem: "FOGAO DOMESTICO, COOKTOP, ACO INOX, 220V, 4 BOCAS", valorEmpenhado: 2860 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "35", siglaUnidadeAde: "PRIP", nomeUnidadeAde: "Pró-Reitoria de Inclusão e Pertencimento", nomuslbem: "DESUMIDIFICADOR DE AR, EM ACO, 12L/DIA,150M3,500M3/H,290W,110V", valorEmpenhado: 6260 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "46", siglaUnidadeAde: "IQ", nomeUnidadeAde: "Instituto de Química", nomuslbem: "DESUMIDIFICADOR DE AR, EM ACO, 12L/DIA,150M3,500M3/H,290W,110V", valorEmpenhado: 6260 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "31", siglaUnidadeAde: "IEB", nomeUnidadeAde: "Instituto de Estudos Brasileiros", nomuslbem: "DESUMIDIFICADOR DE AR, EM ACO, 12L/DIA,150M3,500M3/H,290W,110V", valorEmpenhado: 18780 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "1", siglaUnidadeAde: "RUSP", nomeUnidadeAde: "Reitoria da Universidade de São Paulo", nomuslbem: "REFRIGERADOR DOMESTICO, 240L, UMA PORTA, COR BRANCA", valorEmpenhado: 2431.67 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "1", siglaUnidadeAde: "RUSP", nomeUnidadeAde: "Reitoria da Universidade de São Paulo", nomuslbem: "REFRIGERADOR DOMESTICO,DUPLEX,2 PORTAS,BRANCO", valorEmpenhado: 2386.77 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "1", siglaUnidadeAde: "RUSP", nomeUnidadeAde: "Reitoria da Universidade de São Paulo", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 649.9 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "1", siglaUnidadeAde: "RUSP", nomeUnidadeAde: "Reitoria da Universidade de São Paulo", nomuslbem: "REFRIGERADOR DOMESTICO FRIGOBAR, 127V, PRETO, 93 LITROS MIN", valorEmpenhado: 965.06 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "38", siglaUnidadeAde: "MZ", nomeUnidadeAde: "Museu de Zoologia", nomuslbem: "REFRIGERADOR DOMESTICO, 240L, UMA PORTA, COR BRANCA", valorEmpenhado: 2431.67 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "38", siglaUnidadeAde: "MZ", nomeUnidadeAde: "Museu de Zoologia", nomuslbem: "REFRIGERADOR DOMESTICO FRIGOBAR, 127V, PRETO, 93 LITROS MIN", valorEmpenhado: 965.06 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "38", siglaUnidadeAde: "MZ", nomeUnidadeAde: "Museu de Zoologia", nomuslbem: "VENTILADOR, COLUNA, D=50CM, PRETO, 127V, HELICE 6 PAS, MINIMO 120W", valorEmpenhado: 158 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "1", siglaUnidadeAde: "RUSP", nomeUnidadeAde: "Reitoria da Universidade de São Paulo", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 4549.3 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "1", siglaUnidadeAde: "RUSP", nomeUnidadeAde: "Reitoria da Universidade de São Paulo", nomuslbem: "REFRIGERADOR DOMESTICO,DUPLEX,2 PORTAS,BRANCO", valorEmpenhado: 7160.31 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "55", siglaUnidadeAde: "ICMC", nomeUnidadeAde: "Instituto de Ciências Matemáticas e de Computação", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 1299.8 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "14", siglaUnidadeAde: "IAG", nomeUnidadeAde: "Instituto de Astronomia, Geofísica e Ciências Atmosféricas", nomuslbem: "REFRIGERADOR DOMESTICO FRIGOBAR, 127V, PRETO, 93 LITROS MIN", valorEmpenhado: 965.06 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "14", siglaUnidadeAde: "IAG", nomeUnidadeAde: "Instituto de Astronomia, Geofísica e Ciências Atmosféricas", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 1299.8 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "14", siglaUnidadeAde: "IAG", nomeUnidadeAde: "Instituto de Astronomia, Geofísica e Ciências Atmosféricas", nomuslbem: "REFRIGERADOR DOMESTICO,DUPLEX,2 PORTAS,BRANCO", valorEmpenhado: 2386.77 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "88", siglaUnidadeAde: "EEL", nomeUnidadeAde: "Escola de Engenharia de Lorena", nomuslbem: "REFRIGERADOR DOMESTICO,DUPLEX,2 PORTAS,BRANCO", valorEmpenhado: 2386.77 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "110", siglaUnidadeAde: "PUSP-L", nomeUnidadeAde: "Prefeitura do Campus de Lorena", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 5849.1 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "101", siglaUnidadeAde: "AGEUSPI", nomeUnidadeAde: "Agência USP Inovação", nomuslbem: "REFRIGERADOR DOMESTICO,DUPLEX,2 PORTAS,BRANCO", valorEmpenhado: 2386.77 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "101", siglaUnidadeAde: "AGEUSPI", nomeUnidadeAde: "Agência USP Inovação", nomuslbem: "REFRIGERADOR DOMESTICO FRIGOBAR, 127V, PRETO, 93 LITROS MIN", valorEmpenhado: 1930.12 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "101", siglaUnidadeAde: "AGEUSPI", nomeUnidadeAde: "Agência USP Inovação", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 1299.8 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "88", siglaUnidadeAde: "EEL", nomeUnidadeAde: "Escola de Engenharia de Lorena", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 649.9 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "88", siglaUnidadeAde: "EEL", nomeUnidadeAde: "Escola de Engenharia de Lorena", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 1299.8 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "88", siglaUnidadeAde: "EEL", nomeUnidadeAde: "Escola de Engenharia de Lorena", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 2599.6 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "88", siglaUnidadeAde: "EEL", nomeUnidadeAde: "Escola de Engenharia de Lorena", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 2599.6 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "89", siglaUnidadeAde: "SESA", nomeUnidadeAde: "Serviço Especial de Saúde de Araraquara", nomuslbem: "VENTILADOR DE MESA, 50 CM, 06 HELICES, 200W, BIVOLT", valorEmpenhado: 2860 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "76", siglaUnidadeAde: "IFSC", nomeUnidadeAde: "Instituto de Física de São Carlos", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 1299.8 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "8", siglaUnidadeAde: "FFLCH", nomeUnidadeAde: "Faculdade de Filosofia, Letras e Ciências Humanas", nomuslbem: "REFRIGERADOR DOMESTICO, 240L, UMA PORTA, COR BRANCA", valorEmpenhado: 7295.01 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "8", siglaUnidadeAde: "FFLCH", nomeUnidadeAde: "Faculdade de Filosofia, Letras e Ciências Humanas", nomuslbem: "VENTILADOR DE MESA, 50 CM, 06 HELICES, 200W, BIVOLT", valorEmpenhado: 4290 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "8", siglaUnidadeAde: "FFLCH", nomeUnidadeAde: "Faculdade de Filosofia, Letras e Ciências Humanas", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 3249.5 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "52", siglaUnidadeAde: "PUSP-SC", nomeUnidadeAde: "Prefeitura do Campus de São Carlos", nomuslbem: "REFRIGERADOR DOMESTICO,DUPLEX,2 PORTAS,BRANCO", valorEmpenhado: 2386.77 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "52", siglaUnidadeAde: "PUSP-SC", nomeUnidadeAde: "Prefeitura do Campus de São Carlos", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 649.9 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "52", siglaUnidadeAde: "PUSP-SC", nomeUnidadeAde: "Prefeitura do Campus de São Carlos", nomuslbem: "VENTILADOR DE MESA, 50 CM, 06 HELICES, 200W, BIVOLT", valorEmpenhado: 858 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "52", siglaUnidadeAde: "PUSP-SC", nomeUnidadeAde: "Prefeitura do Campus de São Carlos", nomuslbem: "REFRIGERADOR DOMESTICO FRIGOBAR, 127V, PRETO, 93 LITROS MIN", valorEmpenhado: 965.06 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "52", siglaUnidadeAde: "PUSP-SC", nomeUnidadeAde: "Prefeitura do Campus de São Carlos", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 649.9 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "56", siglaUnidadeAde: "SCS", nomeUnidadeAde: "Superintendência de Comunicação Social", nomuslbem: "REFRIGERADOR DOMESTICO, 240L, UMA PORTA, COR BRANCA", valorEmpenhado: 9726.68 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "56", siglaUnidadeAde: "SCS", nomeUnidadeAde: "Superintendência de Comunicação Social", nomuslbem: "VENTILADOR, COLUNA, D=50CM, PRETO, 127V, HELICE 6 PAS, MINIMO 120W", valorEmpenhado: 3792 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "56", siglaUnidadeAde: "SCS", nomeUnidadeAde: "Superintendência de Comunicação Social", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 1949.7 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 2599.6 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "48", siglaUnidadeAde: "FE", nomeUnidadeAde: "Faculdade de Educação", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 1299.8 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "62", siglaUnidadeAde: "HU", nomeUnidadeAde: "Hospital Universitário", nomuslbem: "VENTILADOR, COLUNA, D=50CM, PRETO, 127V, HELICE 6 PAS, MINIMO 120W", valorEmpenhado: 790 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "62", siglaUnidadeAde: "HU", nomeUnidadeAde: "Hospital Universitário", nomuslbem: "REFRIGERADOR DOMESTICO,DUPLEX,2 PORTAS,BRANCO", valorEmpenhado: 28641.24 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "62", siglaUnidadeAde: "HU", nomeUnidadeAde: "Hospital Universitário", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 1949.7 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "62", siglaUnidadeAde: "HU", nomeUnidadeAde: "Hospital Universitário", nomuslbem: "REFRIGERADOR DOMESTICO FRIGOBAR, 127V, PRETO, 93 LITROS MIN", valorEmpenhado: 2895.18 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "90", siglaUnidadeAde: "EEFERP", nomeUnidadeAde: "Escola de Educação Física e Esporte de Ribeirão Preto", nomuslbem: "VENTILADOR, COLUNA, D=50CM, PRETO, 127V, HELICE 6 PAS, MINIMO 120W", valorEmpenhado: 948 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "90", siglaUnidadeAde: "EEFERP", nomeUnidadeAde: "Escola de Educação Física e Esporte de Ribeirão Preto", nomuslbem: "REFRIGERADOR DOMESTICO,DUPLEX,2 PORTAS,BRANCO", valorEmpenhado: 2386.77 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "21", siglaUnidadeAde: "IO", nomeUnidadeAde: "Instituto Oceanográfico", nomuslbem: "REFRIGERADOR DOMESTICO FRIGOBAR, 127V, PRETO, 93 LITROS MIN", valorEmpenhado: 3860.24 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "21", siglaUnidadeAde: "IO", nomeUnidadeAde: "Instituto Oceanográfico", nomuslbem: "REFRIGERADOR DOMESTICO, 240L, UMA PORTA, COR BRANCA", valorEmpenhado: 4863.34 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "21", siglaUnidadeAde: "IO", nomeUnidadeAde: "Instituto Oceanográfico", nomuslbem: "VENTILADOR, COLUNA, D=50CM, PRETO, 127V, HELICE 6 PAS, MINIMO 120W", valorEmpenhado: 1896 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "21", siglaUnidadeAde: "IO", nomeUnidadeAde: "Instituto Oceanográfico", nomuslbem: "VENTILADOR DE MESA, 50 CM, 06 HELICES, 200W, BIVOLT", valorEmpenhado: 715 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "21", siglaUnidadeAde: "IO", nomeUnidadeAde: "Instituto Oceanográfico", nomuslbem: "REFRIGERADOR DOMESTICO,DUPLEX,2 PORTAS,BRANCO", valorEmpenhado: 4773.54 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "21", siglaUnidadeAde: "IO", nomeUnidadeAde: "Instituto Oceanográfico", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 1299.8 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "21", siglaUnidadeAde: "IO", nomeUnidadeAde: "Instituto Oceanográfico", nomuslbem: "DESUMIDIFICADOR DE AR, EM ACO, 12L/DIA,150M3,500M3/H,290W,110V", valorEmpenhado: 3130 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "35", siglaUnidadeAde: "PRIP", nomeUnidadeAde: "Pró-Reitoria de Inclusão e Pertencimento", nomuslbem: "REFRIGERADOR DOMESTICO,DUPLEX,2 PORTAS,BRANCO", valorEmpenhado: 2386.77 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "35", siglaUnidadeAde: "PRIP", nomeUnidadeAde: "Pró-Reitoria de Inclusão e Pertencimento", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 649.9 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "35", siglaUnidadeAde: "PRIP", nomeUnidadeAde: "Pró-Reitoria de Inclusão e Pertencimento", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 649.9 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "35", siglaUnidadeAde: "PRIP", nomeUnidadeAde: "Pró-Reitoria de Inclusão e Pertencimento", nomuslbem: "REFRIGERADOR DOMESTICO FRIGOBAR, 127V, PRETO, 93 LITROS MIN", valorEmpenhado: 965.06 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "35", siglaUnidadeAde: "PRIP", nomeUnidadeAde: "Pró-Reitoria de Inclusão e Pertencimento", nomuslbem: "REFRIGERADOR DOMESTICO,DUPLEX,2 PORTAS,BRANCO", valorEmpenhado: 4773.54 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "35", siglaUnidadeAde: "PRIP", nomeUnidadeAde: "Pró-Reitoria de Inclusão e Pertencimento", nomuslbem: "VENTILADOR DE MESA, 50 CM, 06 HELICES, 200W, BIVOLT", valorEmpenhado: 858 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "35", siglaUnidadeAde: "PRIP", nomeUnidadeAde: "Pró-Reitoria de Inclusão e Pertencimento", nomuslbem: "VENTILADOR, COLUNA, D=50CM, PRETO, 127V, HELICE 6 PAS, MINIMO 120W", valorEmpenhado: 632 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "46", siglaUnidadeAde: "IQ", nomeUnidadeAde: "Instituto de Química", nomuslbem: "REFRIGERADOR DOMESTICO, 240L, UMA PORTA, COR BRANCA", valorEmpenhado: 7295.01 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "46", siglaUnidadeAde: "IQ", nomeUnidadeAde: "Instituto de Química", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 3899.4 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "46", siglaUnidadeAde: "IQ", nomeUnidadeAde: "Instituto de Química", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 1299.8 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "46", siglaUnidadeAde: "IQ", nomeUnidadeAde: "Instituto de Química", nomuslbem: "REFRIGERADOR DOMESTICO FRIGOBAR, 127V, PRETO, 93 LITROS MIN", valorEmpenhado: 2895.18 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "46", siglaUnidadeAde: "IQ", nomeUnidadeAde: "Instituto de Química", nomuslbem: "VENTILADOR, COLUNA, D=50CM, PRETO, 127V, HELICE 6 PAS, MINIMO 120W", valorEmpenhado: 474 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "46", siglaUnidadeAde: "IQ", nomeUnidadeAde: "Instituto de Química", nomuslbem: "REFRIGERADOR DOMESTICO,DUPLEX,2 PORTAS,BRANCO", valorEmpenhado: 4773.54 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "25", siglaUnidadeAde: "FOB", nomeUnidadeAde: "Faculdade de Odontologia de Bauru", nomuslbem: "VENTILADOR, COLUNA, D=50CM, PRETO, 127V, HELICE 6 PAS, MINIMO 120W", valorEmpenhado: 1896 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "25", siglaUnidadeAde: "FOB", nomeUnidadeAde: "Faculdade de Odontologia de Bauru", nomuslbem: "REFRIGERADOR DOMESTICO, 240L, UMA PORTA, COR BRANCA", valorEmpenhado: 2431.67 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "16", siglaUnidadeAde: "FAU", nomeUnidadeAde: "Faculdade de Arquitetura e Urbanismo e de Design", nomuslbem: "REFRIGERADOR DOMESTICO FRIGOBAR, 127V, PRETO, 93 LITROS MIN", valorEmpenhado: 3860.24 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "16", siglaUnidadeAde: "FAU", nomeUnidadeAde: "Faculdade de Arquitetura e Urbanismo e de Design", nomuslbem: "VENTILADOR, COLUNA, D=50CM, PRETO, 127V, HELICE 6 PAS, MINIMO 120W", valorEmpenhado: 3160 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "16", siglaUnidadeAde: "FAU", nomeUnidadeAde: "Faculdade de Arquitetura e Urbanismo e de Design", nomuslbem: "REFRIGERADOR DOMESTICO,DUPLEX,2 PORTAS,BRANCO", valorEmpenhado: 2386.77 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "42", siglaUnidadeAde: "ICB", nomeUnidadeAde: "Instituto de Ciências Biomédicas", nomuslbem: "REFRIGERADOR DOMESTICO FRIGOBAR, 127V, PRETO, 93 LITROS MIN", valorEmpenhado: 965.06 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "42", siglaUnidadeAde: "ICB", nomeUnidadeAde: "Instituto de Ciências Biomédicas", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 1299.8 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "55", siglaUnidadeAde: "ICMC", nomeUnidadeAde: "Instituto de Ciências Matemáticas e de Computação", nomuslbem: "REFRIGERADOR DOMESTICO FRIGOBAR, 127V, PRETO, 93 LITROS MIN", valorEmpenhado: 965.06 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "76", siglaUnidadeAde: "IFSC", nomeUnidadeAde: "Instituto de Física de São Carlos", nomuslbem: "REFRIGERADOR DOMESTICO FRIGOBAR, 127V, PRETO, 93 LITROS MIN", valorEmpenhado: 1930.12 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "52", siglaUnidadeAde: "PUSP-SC", nomeUnidadeAde: "Prefeitura do Campus de São Carlos", nomuslbem: "REFRIGERADOR DOMESTICO, 240L, UMA PORTA, COR BRANCA", valorEmpenhado: 2431.67 },
+            { codCompra: "202400121140", dataCadastro: "22/11/2024", codUnidadeAde: "16", siglaUnidadeAde: "FAU", nomeUnidadeAde: "Faculdade de Arquitetura e Urbanismo e de Design", nomuslbem: "FORNO,DOMEST.MICROONDAS,INOX,32LS,10 NIVEIS POTENCIA,DIGITAL,110V", valorEmpenhado: 2599.6 },
+            { codCompra: "202400124190", dataCadastro: "29/11/2024", codUnidadeAde: "81", siglaUnidadeAde: "FEARP", nomeUnidadeAde: "Faculdade de Economia, Administração e Contabilidade de Ribeirão Preto", nomuslbem: "COPEIRA", valorEmpenhado: 64194 },
+            { codCompra: "202400124190", dataCadastro: "29/11/2024", codUnidadeAde: "22", siglaUnidadeAde: "EERP", nomeUnidadeAde: "Escola de Enfermagem de Ribeirão Preto", nomuslbem: "COPEIRA", valorEmpenhado: 64194 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR SPLIT PAREDE 12.000 BTUS FRIO SELO A", valorEmpenhado: 1700 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR, HI-WALL, 24.000BTU/H, 220V", valorEmpenhado: 7315.98 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "condicionador de ar, 9.000 btus", valorEmpenhado: 1784.99 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR, HI-WALL, 30.000BTU/H, HI-WALL, 220V", valorEmpenhado: 62300 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR DO TIPO SPLIT, HI-WALL, INVERTER, 9000 BTUS", valorEmpenhado: 8924.95 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR SPLIT NIVERTER 24000 BTU", valorEmpenhado: 7315.98 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR, SPLIT, MIN. 36.000 BTUS, FRIO", valorEmpenhado: 6328 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "condicionador de ar, split, piso/teto, capacidade mínima 57.0000 btu/h", valorEmpenhado: 18000 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR PISO/TETO FRIO 30.000 BTU", valorEmpenhado: 5600 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR SPLIT, HI-WALL, INVERTER,18.000 BTU/U,220 VOLTS", valorEmpenhado: 3425.44 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR SPLIT HI-WALL INVERTER 12.000 BTU/H", valorEmpenhado: 1700 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR PISO/TETO FRIO 30.000 BTU", valorEmpenhado: 5600 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR, PISO TETO, SPLIT, 36.000BTU/H, 220V", valorEmpenhado: 6328 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR, PISO-TETO, 220V, MIN 58.000BTU/H", valorEmpenhado: 27000 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "condicionador de ar, split piso/teto, 30000 btu/h, frio, 1000 m3/h", valorEmpenhado: 11200 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR, DO TIPO SPLIT HI WALL, INVERTER, 12.000 BTUS", valorEmpenhado: 1700 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR SPLIT, HI-WALL, INVERTER, 9000 BTUS", valorEmpenhado: 1784.99 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR, HI-WALL, 30.000BTU/H, HI-WALL, 220V", valorEmpenhado: 4450 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR, TIPO SPLIT, PISO/TETO, 48.000 BTU/H, FRIO", valorEmpenhado: 105360 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR TIPO SPLIT, PISO TETO, 36.000 BTUS", valorEmpenhado: 75936 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR, SPLIT PISO/TETO, 30000 BTU/H, FRIO", valorEmpenhado: 151200 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR 18000 BTU SELO \"A\"", valorEmpenhado: 10276.32 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR, PISO TETO, SPLIT, 36.000BTU/H, 220V", valorEmpenhado: 6328 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR, HI-WALL, 12.000BTU/H, 220V, MONOFASICO, R-32", valorEmpenhado: 3400 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR, PISO TETO, 60.000BTU/H, 380V, TRIFASICO", valorEmpenhado: 19800 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "condicionador de ar, split hi wall, 12000 btu/h, quente e frio", valorEmpenhado: 2349.98 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR DO TIPO SPLIT, HI-WALL, INVERTER, 9000 BTUS", valorEmpenhado: 1784.99 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR, DO TIPO SPLIT HI WALL, INVERTER, 12.000 BTUS", valorEmpenhado: 1700 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "condicionador de ar, split hi wall, 12000 btu/h, quente e frio", valorEmpenhado: 2349.98 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR SPLIT HI-WALL, CAPACIDADE DE 12.000 BTUS", valorEmpenhado: 1700 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR, HI-WALL, 12.000BTU/H, 220V, MONOFASICO, R-32", valorEmpenhado: 6800 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "75", siglaUnidadeAde: "IQSC", nomeUnidadeAde: "Instituto de Química de São Carlos", nomuslbem: "CONDICIONADOR DE AR PISO/TETO FRIO 30.000 BTU", valorEmpenhado: 11200 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "75", siglaUnidadeAde: "IQSC", nomeUnidadeAde: "Instituto de Química de São Carlos", nomuslbem: "CONDICIONADOR DE AR TIPO SPLIT, PISO TETO, 36.000 BTUS", valorEmpenhado: 6328 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "75", siglaUnidadeAde: "IQSC", nomeUnidadeAde: "Instituto de Química de São Carlos", nomuslbem: "CONDICIONADOR DE AR SPLIT NIVERTER 24000 BTU", valorEmpenhado: 3657.99 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "75", siglaUnidadeAde: "IQSC", nomeUnidadeAde: "Instituto de Química de São Carlos", nomuslbem: "CONDICIONADOR DE AR DO TIPO SPLIT, HI-WALL, INVERTER, 9000 BTUS", valorEmpenhado: 1784.99 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR, 9.000BTU/H, 220V, HI-WALL", valorEmpenhado: 1784.99 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "18", siglaUnidadeAde: "EESC", nomeUnidadeAde: "Escola de Engenharia de São Carlos", nomuslbem: "CONDICIONADOR DE AR SPLIT, HI-WALL, INVERTER,18.000 BTU/U,220 VOLTS", valorEmpenhado: 6850.88 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "35", siglaUnidadeAde: "PRIP", nomeUnidadeAde: "Pró-Reitoria de Inclusão e Pertencimento", nomuslbem: "CONDICIONADOR DE AR, HI-WALL, 24.000BTU/H, 220V", valorEmpenhado: 3639.94 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "35", siglaUnidadeAde: "PRIP", nomeUnidadeAde: "Pró-Reitoria de Inclusão e Pertencimento", nomuslbem: "CONDICIONADOR DE AR SPLIT, HI-WALL, INVERTER, 9000 BTUS", valorEmpenhado: 1775 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "35", siglaUnidadeAde: "PRIP", nomeUnidadeAde: "Pró-Reitoria de Inclusão e Pertencimento", nomuslbem: "condicionador de ar, 9.000 btus", valorEmpenhado: 12425 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "35", siglaUnidadeAde: "PRIP", nomeUnidadeAde: "Pró-Reitoria de Inclusão e Pertencimento", nomuslbem: "CONDICIONADOR DE AR, HI-WALL, 30.000BTU/H, HI-WALL, 220V", valorEmpenhado: 8839.98 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "35", siglaUnidadeAde: "PRIP", nomeUnidadeAde: "Pró-Reitoria de Inclusão e Pertencimento", nomuslbem: "CONDICIONADOR DE AR, HI-WALL, 12.000BTU/H, 220V, MONOFASICO, R-32", valorEmpenhado: 1739 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "35", siglaUnidadeAde: "PRIP", nomeUnidadeAde: "Pró-Reitoria de Inclusão e Pertencimento", nomuslbem: "condicionador de ar, split hi wall, 12000 btu/h, quente e frio", valorEmpenhado: 2348 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "35", siglaUnidadeAde: "PRIP", nomeUnidadeAde: "Pró-Reitoria de Inclusão e Pertencimento", nomuslbem: "condicionador de ar, split hi wall, 12000 btu/h, quente e frio", valorEmpenhado: 2348 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "76", siglaUnidadeAde: "IFSC", nomeUnidadeAde: "Instituto de Física de São Carlos", nomuslbem: "CONDICIONADOR DE AR SPLIT, HI-WALL, INVERTER,18.000 BTU/U,220 VOLTS", valorEmpenhado: 41105.28 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "76", siglaUnidadeAde: "IFSC", nomeUnidadeAde: "Instituto de Física de São Carlos", nomuslbem: "CONDICIONADOR DE AR SPLIT HI-WALL INVERTER 12.000 BTU/H", valorEmpenhado: 34000 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "76", siglaUnidadeAde: "IFSC", nomeUnidadeAde: "Instituto de Física de São Carlos", nomuslbem: "CONDICIONADOR DE AR, HI-WALL, 30.000BTU/H, HI-WALL, 220V", valorEmpenhado: 8900 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "76", siglaUnidadeAde: "IFSC", nomeUnidadeAde: "Instituto de Física de São Carlos", nomuslbem: "CONDICIONADOR DE AR, PISO TETO, 60.000BTU/H, 380V, TRIFASICO", valorEmpenhado: 19800 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "89", siglaUnidadeAde: "SESA", nomeUnidadeAde: "Serviço Especial de Saúde de Araraquara", nomuslbem: "CONDICIONADOR DE AR DO TIPO SPLIT, HI-WALL, INVERTER, 9000 BTUS", valorEmpenhado: 1840 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "89", siglaUnidadeAde: "SESA", nomeUnidadeAde: "Serviço Especial de Saúde de Araraquara", nomuslbem: "CONDICIONADOR DE AR SPLIT, HI-WALL, INVERTER,18.000 BTU/U,220 VOLTS", valorEmpenhado: 3425.44 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "89", siglaUnidadeAde: "SESA", nomeUnidadeAde: "Serviço Especial de Saúde de Araraquara", nomuslbem: "CONDICIONADOR DE AR, TIPO SPLIT, PISO/TETO, 48.000 BTU/H, FRIO", valorEmpenhado: 16960 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "7", siglaUnidadeAde: "EE", nomeUnidadeAde: "Escola de Enfermagem", nomuslbem: "condicionador de ar, split hi wall, 12000 btu/h, quente e frio", valorEmpenhado: 54048.85 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "7", siglaUnidadeAde: "EE", nomeUnidadeAde: "Escola de Enfermagem", nomuslbem: "CONDICIONADOR DE AR SPLIT PAREDE 12.000 BTUS FRIO SELO A", valorEmpenhado: 1739 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "7", siglaUnidadeAde: "EE", nomeUnidadeAde: "Escola de Enfermagem", nomuslbem: "condicionador de ar, 9.000 btus", valorEmpenhado: 7100 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "7", siglaUnidadeAde: "EE", nomeUnidadeAde: "Escola de Enfermagem", nomuslbem: "CONDICIONADOR DE AR, HI-WALL, 24.000BTU/H, 220V", valorEmpenhado: 7329.32 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "116", siglaUnidadeAde: "FMBRU", nomeUnidadeAde: "Faculdade de Medicina de Bauru", nomuslbem: "CONDICIONADOR DE AR, HI-WALL, 12.000BTU/H, 220V, MONOFASICO, R-32", valorEmpenhado: 3478 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "116", siglaUnidadeAde: "FMBRU", nomeUnidadeAde: "Faculdade de Medicina de Bauru", nomuslbem: "CONDICIONADOR DE AR 18000 BTU SELO \"A\"", valorEmpenhado: 6850.88 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "116", siglaUnidadeAde: "FMBRU", nomeUnidadeAde: "Faculdade de Medicina de Bauru", nomuslbem: "CONDICIONADOR DE AR, PISO TETO, SPLIT, 36.000BTU/H, 220V", valorEmpenhado: 13200 },
+            { codCompra: "202500022216", dataCadastro: "12/03/2025", codUnidadeAde: "78", siglaUnidadeAde: "CDCC", nomeUnidadeAde: "Centro de Divulgação Científica e Cultural", nomuslbem: "CONDICIONADOR DE AR SPLIT NIVERTER 24000 BTU", valorEmpenhado: 3657.99 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "BOTA SEGURANCA,PVC IMPERMEAVEL(FORRO POLIESTER),NR.40,MASCULINO,PRETA", valorEmpenhado: 151.4 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "BOTA SEGURANCA,PVC IMPERMEAVEL(FORRO POLIESTER),NR.42,MASCULINO,PRETA", valorEmpenhado: 151.56 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "BOTA DE SEGURANÇA,PVC IMPERMEÁVEL,NR.40,BRANCA,NBR", valorEmpenhado: 212.75 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "BOTA DE SEGURANÇA,PVC IMPERMEÁVEL,NR.41,BRANCA,NBR", valorEmpenhado: 212.75 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "BOTA DE SEGURANÇA,PVC IMPERMEÁVEL,NR.42,BRANCA,NBR", valorEmpenhado: 212.4 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "BOTA DE SEGURANÇA,PVC IMPERMEÁVEL,NR.43,BRANCA,NBR", valorEmpenhado: 169.92 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "BOTINA DE PROTECAO,COURO LATEGO,NR.39,UNISSEX,COR PINHAO,CA + NBR", valorEmpenhado: 330 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "BOTINA DE PROTECAO,COURO LATEGO,NR.40,UNISSEX,COR PINHAO,CA + NBR", valorEmpenhado: 1210 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "BOTINA DE PROTECAO,COURO LATEGO,NR.41,UNISSEX,COR PINHAO,CA + NBR", valorEmpenhado: 770 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "BOTINA DE PROTECAO,COURO LATEGO,NR.42,UNISSEX,COR PINHAO,CA + NBR", valorEmpenhado: 660 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "BOTINA DE PROTECAO,COURO LATEGO,NR.43,UNISSEX,COR PINHAO,CA + NBR", valorEmpenhado: 330 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "COTURNO,COURO SEMI-CROMO HIDROFUGADO,NR.39,MASCULINO,PRETO", valorEmpenhado: 280 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "COTURNO,COURO SEMI-CROMO HIDROFUGADO,NR.43,MASCULINO,PRETO", valorEmpenhado: 1120 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "BOTA DE SEGURANCA,EM COURO BOVINO CURTIDO AO CROMO,NR.40,MOTOCICLISTA", valorEmpenhado: 584 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "BOTA DE SEGURANCA,EM COURO BOVINO CURTIDO AO CROMO,NR.41,MOTOCICLISTA", valorEmpenhado: 584 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "BOTA DE SEGURANCA,EM COURO BOVINO CURTIDO AO CROMO,NR.42,MOTOCICLISTA", valorEmpenhado: 1168 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "PROTETOR AUDITIVO,TIPO INSERÇÃO PRÉ MOLDADO,LARANJA,TAM.UNICO,18DB", valorEmpenhado: 160 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "BOTA DE SEGURANCA,EM COURO BOVINO CURTIDO AO CROMO,NR.43,MOTOCICLISTA", valorEmpenhado: 584 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "BOTA DE SEGURANCA,EM COURO BOVINO CURTIDO AO CROMO,NR.44,MOTOCICLISTA", valorEmpenhado: 584 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "TOUCA PARA PROTECAO CAPILAR DO TIPO CAPUZ LEGIONARIO,MOD ARADE", valorEmpenhado: 360 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "LUVA DE SEGURANCA,TRICOTADA NYLON ELASTANO,GRANDE,EN 388/2003+CA", valorEmpenhado: 85 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "LUVA DE SEGURANCA,LATEX/NEOPRENE,10\" OU EQUIVALENTE,CA", valorEmpenhado: 320 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "RESPIRADOR SEMIFACIAL PECA FACIAL FILTRANTE,TAM.UNICO,PFF2,NORMAS.", valorEmpenhado: 2500 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "CORDA DE FIBRA,POLIESTER,12MM,TRANCADA", valorEmpenhado: 1000 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "BARREIRA PARA SINALIZACAO VIARIA", valorEmpenhado: 5500 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "ROUPA P/PROTECAO E SEGURANCA,CALCA,RISCO 2 ATPV MIN.10,8,MEDIO", valorEmpenhado: 360 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "ROUPA P/PROTECAO E SEGURANCA,CALCA RISCO 2,ATPV MIN.10,8,GRANDE", valorEmpenhado: 1080 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "ROUPA P/PROTECAO E SEGURANCA,CALCA RISCO 2,ATPV MIN.10,8,GG", valorEmpenhado: 360 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "FITA DE ISOLAMENTO DE AREA,AMARELA/PRETA(ZEBRADA,ROLO 200M", valorEmpenhado: 907.8 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "REPELENTE PARA PELE EM SPRAY", valorEmpenhado: 3331.5 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "MASCARA DE PROTECAO PARA SOLDA COM ESCURECIMENTO AUTOMATICO", valorEmpenhado: 3960 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "PROTETOR SOLAR FPS UVA/UVB 50,LOCAO OIL FREE LIVRE DE:PABA,,OLEO,ALCOO", valorEmpenhado: 2571.8 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "BOTA SEGURANCA,PVC IMPERMEAVEL(FORRO POLIESTER),NR.41,MASCULINO,PRETA", valorEmpenhado: 151.6 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "COTURNO,COURO SEMI-CROMO HIDROFUGADO,NR.40,MASCULINO,PRETO", valorEmpenhado: 1400 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "PROTETOR LOMBAR MODULAR TATICO,ALMA INTERNA EM POLIMERO(GG)", valorEmpenhado: 200 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "ROUPA P/PROTECAO SEGURANCA,CAMISA,RISCO 2, ATPV MINIMO 10,8,GRANDE", valorEmpenhado: 1440 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "10", siglaUnidadeAde: "FMVZ", nomeUnidadeAde: "Faculdade de Medicina Veterinária e Zootecnia", nomuslbem: "BOTA DE SEGURANÇA,PVC IMPERMEÁVEL,NR.42,BRANCA,NBR", valorEmpenhado: 127.44 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "74", siglaUnidadeAde: "FZEA", nomeUnidadeAde: "Faculdade de Zootecnia e Engenharia de Alimentos", nomuslbem: "COTURNO,COURO SEMI-CROMO HIDROFUGADO,NR.39,MASCULINO,PRETO", valorEmpenhado: 280 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "74", siglaUnidadeAde: "FZEA", nomeUnidadeAde: "Faculdade de Zootecnia e Engenharia de Alimentos", nomuslbem: "RESPIRADOR SEMIFACIAL PECA FACIAL FILTRANTE,TAM.UNICO,PFF2,NORMAS.", valorEmpenhado: 150 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "BOTA SEGURANCA,PVC IMPERMEAVEL(FORRO POLIESTER),NR.43,MASCULINO,PRETA", valorEmpenhado: 151.56 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "19", siglaUnidadeAde: "PUSP-FC", nomeUnidadeAde: "Prefeitura do Campus Fernando Costa", nomuslbem: "OCULOS DE PROTECAO DESTINADO PARA SERVICOS EM CAMPO", valorEmpenhado: 234.6 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "10", siglaUnidadeAde: "FMVZ", nomeUnidadeAde: "Faculdade de Medicina Veterinária e Zootecnia", nomuslbem: "PROTETOR AUDITIVO,TIPO INSERÇÃO PRÉ MOLDADO,LARANJA,TAM.UNICO,18DB", valorEmpenhado: 40 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "10", siglaUnidadeAde: "FMVZ", nomeUnidadeAde: "Faculdade de Medicina Veterinária e Zootecnia", nomuslbem: "BOTA SEGURANCA,PVC IMPERMEAVEL(FORRO POLIESTER),NR.40,MASCULINO,PRETA", valorEmpenhado: 75.7 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "10", siglaUnidadeAde: "FMVZ", nomeUnidadeAde: "Faculdade de Medicina Veterinária e Zootecnia", nomuslbem: "BOTA SEGURANCA,PVC IMPERMEAVEL(FORRO POLIESTER),NR.41,MASCULINO,PRETA", valorEmpenhado: 151.6 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "10", siglaUnidadeAde: "FMVZ", nomeUnidadeAde: "Faculdade de Medicina Veterinária e Zootecnia", nomuslbem: "BOTA DE SEGURANÇA,PVC IMPERMEÁVEL,NR.40,BRANCA,NBR", valorEmpenhado: 127.65 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "10", siglaUnidadeAde: "FMVZ", nomeUnidadeAde: "Faculdade de Medicina Veterinária e Zootecnia", nomuslbem: "BOTA DE SEGURANÇA,PVC IMPERMEÁVEL,NR.41,BRANCA,NBR", valorEmpenhado: 127.65 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "10", siglaUnidadeAde: "FMVZ", nomeUnidadeAde: "Faculdade de Medicina Veterinária e Zootecnia", nomuslbem: "BOTA DE SEGURANÇA,PVC IMPERMEÁVEL,NR.42,BRANCA,NBR", valorEmpenhado: 127.44 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "10", siglaUnidadeAde: "FMVZ", nomeUnidadeAde: "Faculdade de Medicina Veterinária e Zootecnia", nomuslbem: "BOTA DE SEGURANCA,EM COURO BOVINO CURTIDO AO CROMO,NR.44,MOTOCICLISTA", valorEmpenhado: 1752 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "10", siglaUnidadeAde: "FMVZ", nomeUnidadeAde: "Faculdade de Medicina Veterinária e Zootecnia", nomuslbem: "BOTINA DE PROTECAO,COURO LATEGO,NR.40,UNISSEX,COR PINHAO,CA + NBR", valorEmpenhado: 440 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "10", siglaUnidadeAde: "FMVZ", nomeUnidadeAde: "Faculdade de Medicina Veterinária e Zootecnia", nomuslbem: "PROTETOR LOMBAR MODULAR TATICO,ALMA INTERNA EM POLIMERO(GG)", valorEmpenhado: 40 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "10", siglaUnidadeAde: "FMVZ", nomeUnidadeAde: "Faculdade de Medicina Veterinária e Zootecnia", nomuslbem: "LUVA DE SEGURANCA,LATEX/NEOPRENE,10\" OU EQUIVALENTE,CA", valorEmpenhado: 80 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "10", siglaUnidadeAde: "FMVZ", nomeUnidadeAde: "Faculdade de Medicina Veterinária e Zootecnia", nomuslbem: "LUVA DE SEGURANCA,TRICOTADA NYLON ELASTANO,GRANDE,EN 388/2003+CA", valorEmpenhado: 85 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "10", siglaUnidadeAde: "FMVZ", nomeUnidadeAde: "Faculdade de Medicina Veterinária e Zootecnia", nomuslbem: "REPELENTE PARA PELE EM SPRAY", valorEmpenhado: 666.3 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "10", siglaUnidadeAde: "FMVZ", nomeUnidadeAde: "Faculdade de Medicina Veterinária e Zootecnia", nomuslbem: "PROTETOR SOLAR FPS UVA/UVB 50,LOCAO OIL FREE LIVRE DE:PABA,,OLEO,ALCOO", valorEmpenhado: 918.5 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "10", siglaUnidadeAde: "FMVZ", nomeUnidadeAde: "Faculdade de Medicina Veterinária e Zootecnia", nomuslbem: "OCULOS DE PROTECAO DESTINADO PARA SERVICOS EM CAMPO", valorEmpenhado: 39.1 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "10", siglaUnidadeAde: "FMVZ", nomeUnidadeAde: "Faculdade de Medicina Veterinária e Zootecnia", nomuslbem: "MASCARA DE PROTECAO PARA SOLDA COM ESCURECIMENTO AUTOMATICO", valorEmpenhado: 1320 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "10", siglaUnidadeAde: "FMVZ", nomeUnidadeAde: "Faculdade de Medicina Veterinária e Zootecnia", nomuslbem: "RESPIRADOR SEMIFACIAL PECA FACIAL FILTRANTE,TAM.UNICO,PFF2,NORMAS.", valorEmpenhado: 125 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "74", siglaUnidadeAde: "FZEA", nomeUnidadeAde: "Faculdade de Zootecnia e Engenharia de Alimentos", nomuslbem: "BOTA SEGURANCA,PVC IMPERMEAVEL(FORRO POLIESTER),NR.41,MASCULINO,PRETA", valorEmpenhado: 151.6 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "74", siglaUnidadeAde: "FZEA", nomeUnidadeAde: "Faculdade de Zootecnia e Engenharia de Alimentos", nomuslbem: "BOTA SEGURANCA,PVC IMPERMEAVEL(FORRO POLIESTER),NR.40,MASCULINO,PRETA", valorEmpenhado: 151.4 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "74", siglaUnidadeAde: "FZEA", nomeUnidadeAde: "Faculdade de Zootecnia e Engenharia de Alimentos", nomuslbem: "BOTA SEGURANCA,PVC IMPERMEAVEL(FORRO POLIESTER),NR.42,MASCULINO,PRETA", valorEmpenhado: 37.89 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "74", siglaUnidadeAde: "FZEA", nomeUnidadeAde: "Faculdade de Zootecnia e Engenharia de Alimentos", nomuslbem: "BOTA SEGURANCA,PVC IMPERMEAVEL(FORRO POLIESTER),NR.43,MASCULINO,PRETA", valorEmpenhado: 227.34 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "74", siglaUnidadeAde: "FZEA", nomeUnidadeAde: "Faculdade de Zootecnia e Engenharia de Alimentos", nomuslbem: "BOTINA DE PROTECAO,COURO LATEGO,NR.39,UNISSEX,COR PINHAO,CA + NBR", valorEmpenhado: 1650 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "74", siglaUnidadeAde: "FZEA", nomeUnidadeAde: "Faculdade de Zootecnia e Engenharia de Alimentos", nomuslbem: "BOTINA DE PROTECAO,COURO LATEGO,NR.40,UNISSEX,COR PINHAO,CA + NBR", valorEmpenhado: 2420 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "74", siglaUnidadeAde: "FZEA", nomeUnidadeAde: "Faculdade de Zootecnia e Engenharia de Alimentos", nomuslbem: "BOTINA DE PROTECAO,COURO LATEGO,NR.41,UNISSEX,COR PINHAO,CA + NBR", valorEmpenhado: 2640 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "74", siglaUnidadeAde: "FZEA", nomeUnidadeAde: "Faculdade de Zootecnia e Engenharia de Alimentos", nomuslbem: "BOTINA DE PROTECAO,COURO LATEGO,NR.42,UNISSEX,COR PINHAO,CA + NBR", valorEmpenhado: 1760 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "74", siglaUnidadeAde: "FZEA", nomeUnidadeAde: "Faculdade de Zootecnia e Engenharia de Alimentos", nomuslbem: "BOTINA DE PROTECAO,COURO LATEGO,NR.43,UNISSEX,COR PINHAO,CA + NBR", valorEmpenhado: 1320 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "74", siglaUnidadeAde: "FZEA", nomeUnidadeAde: "Faculdade de Zootecnia e Engenharia de Alimentos", nomuslbem: "COTURNO,COURO SEMI-CROMO HIDROFUGADO,NR.40,MASCULINO,PRETO", valorEmpenhado: 280 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "74", siglaUnidadeAde: "FZEA", nomeUnidadeAde: "Faculdade de Zootecnia e Engenharia de Alimentos", nomuslbem: "COTURNO,COURO SEMI-CROMO HIDROFUGADO,NR.43,MASCULINO,PRETO", valorEmpenhado: 280 },
+            { codCompra: "202500027625", dataCadastro: "27/03/2025", codUnidadeAde: "74", siglaUnidadeAde: "FZEA", nomeUnidadeAde: "Faculdade de Zootecnia e Engenharia de Alimentos", nomuslbem: "TOUCA PARA PROTECAO CAPILAR DO TIPO CAPUZ LEGIONARIO,MOD ARADE", valorEmpenhado: 54 }
+        ];
+
+        // Categorize each record based on keywords in nomuslbem
+        function categorizeItem(itemDesc) {
+            const desc = itemDesc.toLowerCase();
+            if (desc.includes('vigilante') || desc.includes('posto 12 horas') || desc.includes('monitoramento') || desc.includes('gerenciamento local de imagens')) {
+                return 'Vigilância e Segurança';
+            } else if (desc.includes('condicionador de ar') || desc.includes('split') || desc.includes('btu') || desc.includes('piso/teto') || desc.includes('hi-wall')) {
+                return 'Ar Condicionado';
+            } else if (desc.includes('refrigerador') || desc.includes('frigobar') || desc.includes('microondas') || desc.includes('ventilador') || desc.includes('cooktop') || desc.includes('fogao') || desc.includes('desumidificador')) {
+                return 'Eletrodomésticos';
+            } else if (desc.includes('bota') || desc.includes('botina') || desc.includes('coturno') || desc.includes('protetor') || desc.includes('luva') || desc.includes('respirador') || desc.includes('óculos') || desc.includes('oculos') || desc.includes('mascara') || desc.includes('repelente') || desc.includes('roupa')) {
+                return 'EPIs e Vestuário';
+            } else if (desc.includes('copeira') || desc.includes('instalacoes afins') || desc.includes('currais') || desc.includes('estabulos')) {
+                return 'Serviços e Instalações';
+            }
+            return 'Outros';
+        }
+
+        // Process data with unique IDs and categories
+        const dataset = rawData.map((item, index) => ({
+            id: index + 1,
+            ...item,
+            categoria: categorizeItem(item.nomuslbem)
+        }));
+
+        // App State
+        let currentFilteredData = [...dataset];
+        let currentPage = 1;
+        let pageSize = 25;
+        let sortColumn = 'valorEmpenhado';
+        let sortDirection = 'desc';
+
+        // Chart Instances
+        let chartTopUnidadesInstance = null;
+        let chartCategoriasInstance = null;
+        let chartCodComprasInstance = null;
+
+        // Currency Formatter
+        const formatBRL = (value) => {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+        };
+
+        // Number Formatter
+        const formatNumber = (num) => {
+            return new Intl.NumberFormat('pt-BR').format(num);
+        };
+
+        // Initialize App on DOM Loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            populateFilterDropdowns();
+            setupEventListeners();
+            applyFilters();
+        });
+
+        // Populate dropdown options dynamically
+        function populateFilterDropdowns() {
+            const unidades = [...new Set(dataset.map(d => `${d.siglaUnidadeAde} - ${d.nomeUnidadeAde}`))].sort();
+            const selectUnidade = document.getElementById('selectUnidade');
+            unidades.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.split(' - ')[0]; // store sigla
+                opt.textContent = u;
+                selectUnidade.appendChild(opt);
+            });
+
+            const compras = [...new Set(dataset.map(d => d.codCompra))].sort();
+            const selectCompra = document.getElementById('selectCompra');
+            compras.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = `Proc. Nº ${c}`;
+                selectCompra.appendChild(opt);
+            });
+
+            const categorias = [...new Set(dataset.map(d => d.categoria))].sort();
+            const selectCategoria = document.getElementById('selectCategoria');
+            categorias.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                selectCategoria.appendChild(opt);
+            });
+        }
+
+        // Setup event handlers
+        function setupEventListeners() {
+            document.getElementById('searchInput').addEventListener('input', debounce(applyFilters, 250));
+            document.getElementById('selectUnidade').addEventListener('change', applyFilters);
+            document.getElementById('selectCompra').addEventListener('change', applyFilters);
+            document.getElementById('selectCategoria').addEventListener('change', applyFilters);
+
+            document.getElementById('pageSizeSelect').addEventListener('change', (e) => {
+                pageSize = parseInt(e.target.value, 10);
+                currentPage = 1;
+                renderTable();
+            });
+
+            document.getElementById('btnExportCSV').addEventListener('click', exportCSV);
+        }
+
+        // Utility: Debounce input search
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        // Main Filter Logic
+        function applyFilters() {
+            const searchValue = document.getElementById('searchInput').value.toLowerCase().trim();
+            const selectedUnidade = document.getElementById('selectUnidade').value;
+            const selectedCompra = document.getElementById('selectCompra').value;
+            const selectedCategoria = document.getElementById('selectCategoria').value;
+
+            currentFilteredData = dataset.filter(item => {
+                const matchesSearch = !searchValue || 
+                    item.nomuslbem.toLowerCase().includes(searchValue) ||
+                    item.nomeUnidadeAde.toLowerCase().includes(searchValue) ||
+                    item.siglaUnidadeAde.toLowerCase().includes(searchValue) ||
+                    item.codCompra.includes(searchValue);
+
+                const matchesUnidade = !selectedUnidade || item.siglaUnidadeAde === selectedUnidade;
+                const matchesCompra = !selectedCompra || item.codCompra === selectedCompra;
+                const matchesCategoria = !selectedCategoria || item.categoria === selectedCategoria;
+
+                return matchesSearch && matchesUnidade && matchesCompra && matchesCategoria;
+            });
+
+            currentPage = 1;
+            sortData();
+            updateKPIs();
+            renderActiveFiltersPills();
+            renderCharts();
+            renderTopItemsList();
+            renderTable();
+        }
+
+        // Clear all filter inputs
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('selectUnidade').value = '';
+            document.getElementById('selectCompra').value = '';
+            document.getElementById('selectCategoria').value = '';
+            applyFilters();
+        }
+
+        // Render active filter pills
+        function renderActiveFiltersPills() {
+            const container = document.getElementById('activeFiltersContainer');
+            const list = document.getElementById('activeFiltersList');
+            list.innerHTML = '';
+
+            const active = [];
+
+            const searchVal = document.getElementById('searchInput').value.trim();
+            if (searchVal) active.push({ type: 'Busca', val: `"${searchVal}"`, clear: () => { document.getElementById('searchInput').value = ''; } });
+
+            const unidadeVal = document.getElementById('selectUnidade').value;
+            if (unidadeVal) active.push({ type: 'Unidade', val: unidadeVal, clear: () => { document.getElementById('selectUnidade').value = ''; } });
+
+            const compraVal = document.getElementById('selectCompra').value;
+            if (compraVal) active.push({ type: 'Processo', val: compraVal, clear: () => { document.getElementById('selectCompra').value = ''; } });
+
+            const catVal = document.getElementById('selectCategoria').value;
+            if (catVal) active.push({ type: 'Categoria', val: catVal, clear: () => { document.getElementById('selectCategoria').value = ''; } });
+
+            if (active.length > 0) {
+                container.classList.remove('hidden');
+                active.forEach(item => {
+                    const pill = document.createElement('span');
+                    pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-sky-500/10 text-sky-300 border border-sky-500/20';
+                    pill.innerHTML = `<span><strong>${item.type}:</strong> ${item.val}</span>`;
+                    
+                    const closeBtn = document.createElement('button');
+                    closeBtn.className = 'text-sky-400 hover:text-white transition';
+                    closeBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                    closeBtn.onclick = () => {
+                        item.clear();
+                        applyFilters();
+                    };
+
+                    pill.appendChild(closeBtn);
+                    list.appendChild(pill);
+                });
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        // Update Summary KPI Cards
+        function updateKPIs() {
+            const totalVal = currentFilteredData.reduce((acc, curr) => acc + curr.valorEmpenhado, 0);
+            const uniqueCompras = new Set(currentFilteredData.map(d => d.codCompra)).size;
+            const uniqueUnidades = new Set(currentFilteredData.map(d => d.siglaUnidadeAde)).size;
+            const itemCount = currentFilteredData.length;
+            const mediaVal = itemCount > 0 ? totalVal / itemCount : 0;
+
+            document.getElementById('kpiTotalEmpenhado').textContent = formatBRL(totalVal);
+            document.getElementById('kpiTotalCompras').textContent = formatNumber(uniqueCompras);
+            document.getElementById('kpiTotalUnidades').textContent = formatNumber(uniqueUnidades);
+            document.getElementById('kpiMediaEmpenhado').textContent = formatBRL(mediaVal);
+            document.getElementById('kpiTotalItens').innerHTML = `<i class="fa-solid fa-box text-emerald-400"></i> <span>${formatNumber(itemCount)} contrato(s) no filtro</span>`;
+            document.getElementById('recordCountBadge').textContent = `Mostrando ${formatNumber(itemCount)} de ${formatNumber(dataset.length)} registros`;
+        }
+
+        // Render Dashboard Charts
+        function renderCharts() {
+            // Chart 1: Top Unidades
+            const unidadeTotals = {};
+            currentFilteredData.forEach(item => {
+                unidadeTotals[item.siglaUnidadeAde] = (unidadeTotals[item.siglaUnidadeAde] || 0) + item.valorEmpenhado;
+            });
+
+            const sortedUnidades = Object.entries(unidadeTotals)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 8);
+
+            const ctx1 = document.getElementById('chartTopUnidades').getContext('2d');
+            if (chartTopUnidadesInstance) chartTopUnidadesInstance.destroy();
+
+            chartTopUnidadesInstance = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: sortedUnidades.map(u => u[0]),
+                    datasets: [{
+                        label: 'Valor Empenhado (R$)',
+                        data: sortedUnidades.map(u => u[1]),
+                        backgroundColor: 'rgba(2, 132, 199, 0.75)',
+                        borderColor: '#38bdf8',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => ` Total: ${formatBRL(context.raw)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#94a3b8', font: { size: 10 } },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        },
+                        y: {
+                            ticks: { 
+                                color: '#94a3b8',
+                                font: { size: 10 },
+                                callback: (val) => 'R$ ' + (val >= 1000000 ? (val/1000000).toFixed(1) + 'M' : (val/1000).toFixed(0) + 'k')
+                            },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        }
+                    }
+                }
+            });
+
+            // Chart 2: Categoria Doughnut
+            const catTotals = {};
+            currentFilteredData.forEach(item => {
+                catTotals[item.categoria] = (catTotals[item.categoria] || 0) + item.valorEmpenhado;
+            });
+
+            const catLabels = Object.keys(catTotals);
+            const catValues = Object.values(catTotals);
+
+            const ctx2 = document.getElementById('chartCategorias').getContext('2d');
+            if (chartCategoriasInstance) chartCategoriasInstance.destroy();
+
+            chartCategoriasInstance = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: catLabels,
+                    datasets: [{
+                        data: catValues,
+                        backgroundColor: [
+                            'rgba(2, 132, 199, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(168, 85, 247, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(239, 68, 68, 0.8)'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#0f172a'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#cbd5e1', font: { size: 10 }, boxWidth: 12, padding: 15 }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => ` ${context.label}: ${formatBRL(context.raw)}`
+                            }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+
+            // Chart 3: Processos de Compra
+            const compraTotals = {};
+            currentFilteredData.forEach(item => {
+                compraTotals[item.codCompra] = (compraTotals[item.codCompra] || 0) + item.valorEmpenhado;
+            });
+
+            const sortedCompras = Object.entries(compraTotals)
+                .sort((a, b) => b[1] - a[1]);
+
+            const ctx3 = document.getElementById('chartCodCompras').getContext('2d');
+            if (chartCodComprasInstance) chartCodComprasInstance.destroy();
+
+            chartCodComprasInstance = new Chart(ctx3, {
+                type: 'bar',
+                data: {
+                    labels: sortedCompras.map(c => `Proc. ${c[0]}`),
+                    datasets: [{
+                        label: 'Total Empenhado',
+                        data: sortedCompras.map(c => c[1]),
+                        backgroundColor: 'rgba(168, 85, 247, 0.75)',
+                        borderColor: '#c084fc',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => ` Total: ${formatBRL(context.raw)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { 
+                                color: '#94a3b8',
+                                font: { size: 10 },
+                                callback: (val) => 'R$ ' + (val >= 1000000 ? (val/1000000).toFixed(1) + 'M' : (val/1000).toFixed(0) + 'k')
+                            },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        },
+                        y: {
+                            ticks: { color: '#94a3b8', font: { size: 10 } },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Render Top Expensive Items List Widget
+        function renderTopItemsList() {
+            const container = document.getElementById('topItemsList');
+            container.innerHTML = '';
+
+            const top5 = [...currentFilteredData]
+                .sort((a, b) => b.valorEmpenhado - a.valorEmpenhado)
+                .slice(0, 5);
+
+            if (top5.length === 0) {
+                container.innerHTML = '<div class="text-xs text-slate-500 py-4 text-center">Nenhum registro encontrado.</div>';
+                return;
+            }
+
+            top5.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = 'glass-card p-3 rounded-xl hover:border-slate-700 transition cursor-pointer flex items-center justify-between gap-3';
+                div.onclick = () => openModal(item.id);
+
+                div.innerHTML = `
+                    <div class="flex items-center space-x-3 overflow-hidden">
+                        <div class="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-400 font-bold text-xs flex items-center justify-center shrink-0 border border-amber-500/20">
+                            ${idx + 1}
+                        </div>
+                        <div class="truncate">
+                            <div class="font-semibold text-slate-200 truncate flex items-center gap-1.5">
+                                <span>${item.siglaUnidadeAde}</span>
+                                <span class="text-[10px] text-slate-500 font-normal">(${item.codCompra})</span>
+                            </div>
+                            <div class="text-[11px] text-slate-400 truncate mt-0.5">${item.nomuslbem}</div>
+                        </div>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <div class="font-bold text-emerald-400 text-xs">${formatBRL(item.valorEmpenhado)}</div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Sort data table columns
+        function sortTable(column) {
+            if (sortColumn === column) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortColumn = column;
+                sortDirection = 'desc';
+            }
+            sortData();
+            renderTable();
+        }
+
+        function sortData() {
+            currentFilteredData.sort((a, b) => {
+                let valA = a[sortColumn];
+                let valB = b[sortColumn];
+
+                if (typeof valA === 'string') {
+                    valA = valA.toLowerCase();
+                    valB = valB.toLowerCase();
+                }
+
+                if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        // Render Paginated Data Table
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            const total = currentFilteredData.length;
+            const startIdx = (currentPage - 1) * pageSize;
+            const endIdx = Math.min(startIdx + pageSize, total);
+            const pageData = currentFilteredData.slice(startIdx, endIdx);
+
+            if (total === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="py-8 text-center text-slate-500">
+                            <i class="fa-solid fa-folder-open text-2xl mb-2 block"></i>
+                            Nenhum registro encontrado com os filtros selecionados.
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('paginationInfo').textContent = 'Exibindo 0 registros';
+                document.getElementById('paginationButtons').innerHTML = '';
+                return;
+            }
+
+            pageData.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/50 transition duration-150 group';
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-mono text-slate-400 font-medium">${item.codCompra}</td>
+                    <td class="py-3 px-4 whitespace-nowrap text-slate-400">${item.dataCadastro}</td>
+                    <td class="py-3 px-4 font-semibold text-sky-400 whitespace-nowrap" title="${item.nomeUnidadeAde}">
+                        ${item.siglaUnidadeAde}
+                    </td>
+                    <td class="py-3 px-4 whitespace-nowrap">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-300 border border-slate-700">
+                            ${item.categoria}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 max-w-xs md:max-w-md truncate text-slate-200" title="${item.nomuslbem}">
+                        ${item.nomuslbem}
+                    </td>
+                    <td class="py-3 px-4 text-right font-bold text-emerald-400 whitespace-nowrap">
+                        ${formatBRL(item.valorEmpenhado)}
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <button onclick="openModal(${item.id})" class="text-slate-400 hover:text-sky-400 p-1 rounded-lg hover:bg-slate-800 transition" title="Ver Detalhes">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Update Pagination Controls
+            document.getElementById('paginationInfo').textContent = `Exibindo ${startIdx + 1} a ${endIdx} de ${formatNumber(total)} registros`;
+            renderPaginationButtons(total);
+        }
+
+        // Render Pagination Button Elements
+        function renderPaginationButtons(total) {
+            const container = document.getElementById('paginationButtons');
+            container.innerHTML = '';
+
+            const totalPages = Math.ceil(total / pageSize);
+            if (totalPages <= 1) return;
+
+            // Previous Button
+            const prevBtn = document.createElement('button');
+            prevBtn.className = `px-2.5 py-1 rounded-lg border border-slate-700 text-xs font-medium transition ${currentPage === 1 ? 'opacity-40 cursor-not-allowed text-slate-600' : 'text-slate-300 hover:bg-slate-800'}`;
+            prevBtn.innerHTML = '<i class="fa-solid fa-chevron-left"></i>';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; renderTable(); } };
+            container.appendChild(prevBtn);
+
+            // Page numbers
+            let pages = [];
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                    pages.push(i);
+                } else if (pages[pages.length - 1] !== '...') {
+                    pages.push('...');
+                }
+            }
+
+            pages.forEach(p => {
+                if (p === '...') {
+                    const span = document.createElement('span');
+                    span.className = 'px-2 text-slate-600 text-xs';
+                    span.textContent = '...';
+                    container.appendChild(span);
+                } else {
+                    const btn = document.createElement('button');
+                    btn.className = `px-2.5 py-1 rounded-lg border text-xs font-medium transition ${p === currentPage ? 'bg-sky-600 text-white border-sky-500' : 'border-slate-700 text-slate-300 hover:bg-slate-800'}`;
+                    btn.textContent = p;
+                    btn.onclick = () => { currentPage = p; renderTable(); };
+                    container.appendChild(btn);
+                }
+            });
+
+            // Next Button
+            const nextBtn = document.createElement('button');
+            nextBtn.className = `px-2.5 py-1 rounded-lg border border-slate-700 text-xs font-medium transition ${currentPage === totalPages ? 'opacity-40 cursor-not-allowed text-slate-600' : 'text-slate-300 hover:bg-slate-800'}`;
+            nextBtn.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => { if (currentPage < totalPages) { currentPage++; renderTable(); } };
+            container.appendChild(nextBtn);
+        }
+
+        // Modal functions
+        function openModal(id) {
+            const item = dataset.find(d => d.id === id);
+            if (!item) return;
+
+            document.getElementById('modalSubTitle').textContent = `Código de Compra: ${item.codCompra}`;
+            document.getElementById('modalSigla').textContent = item.siglaUnidadeAde;
+            document.getElementById('modalNomeUnidade').textContent = item.nomeUnidadeAde;
+            document.getElementById('modalCodUnidade').textContent = item.codUnidadeAde;
+            document.getElementById('modalData').textContent = item.dataCadastro;
+            document.getElementById('modalCategoria').textContent = item.categoria;
+            document.getElementById('modalDescricao').textContent = item.nomuslbem;
+            document.getElementById('modalValor').textContent = formatBRL(item.valorEmpenhado);
+
+            document.getElementById('detailModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('detailModal').classList.add('hidden');
+        }
+
+        // Close modal on escape key or background click
+        window.onclick = function(event) {
+            const modal = document.getElementById('detailModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        };
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        // Export CSV Functionality
+        function exportCSV() {
+            if (currentFilteredData.length === 0) return;
+
+            const headers = ['codCompra', 'dataCadastro', 'codUnidadeAde', 'siglaUnidadeAde', 'nomeUnidadeAde', 'categoria', 'nomuslbem', 'valorEmpenhado'];
+            const csvRows = [];
+            
+            // CSV Header
+            csvRows.push(headers.join(';'));
+
+            // CSV Body
+            currentFilteredData.forEach(row => {
+                const values = headers.map(header => {
+                    const val = row[header];
+                    const escaped = ('' + val).replace(/"/g, '""');
+                    return `"${escaped}"`;
+                });
+                csvRows.push(values.join(';'));
+            });
+
+            const csvString = '\uFEFF' + csvRows.join('\n'); // UTF-8 BOM
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `USP_Adesoes_Empenho_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
