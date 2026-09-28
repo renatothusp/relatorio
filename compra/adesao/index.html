@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel Executivo — Adesão a Compras USP | Ganho de Escala e Eficiência do Gasto Público</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">
+      <span class="dot"></span> Universidade de São Paulo · Relatório Executivo
+    </div>
+    <h1>Adesão a Compras</h1>
+    <p class="hero-sub">Ganho de escala, colaboração interunidades e eficiência no gasto público</p>
+
+    <div class="hero-kpis" id="heroKpis"></div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ===================== PAINEL 1 ===================== -->
+  <section class="panel" id="painel1">
+    <div class="panel-head">
+      <span class="panel-num">Painel 1</span>
+      <div>
+        <h2>Linha do Tempo e Marco Histórico</h2>
+        <p class="panel-desc">O pioneirismo da Universidade: da primeira demanda aberta à escala institucional</p>
+      </div>
+    </div>
+
+    <div class="p1-grid">
+      <!-- Card destaque -->
+      <article class="hero-card" id="primeiraDemanda">
+        <div class="hc-glow" aria-hidden="true"></div>
+        <div class="hc-tag">★ Primeira Demanda Aberta para Adesão</div>
+        <h3 id="pdSigla">—</h3>
+        <p class="hc-nome" id="pdNome">—</p>
+
+        <div class="hc-rows" id="pdRows"></div>
+
+        <div class="hc-metrics">
+          <div class="hc-metric">
+            <span class="hc-m-label">Valor Empenhado Total</span>
+            <span class="hc-m-value" id="pdValor">—</span>
+          </div>
+          <div class="hc-metric">
+            <span class="hc-m-label">Capilaridade</span>
+            <span class="hc-m-value" id="pdCapilar">—</span>
+          </div>
+          <div class="hc-metric accent">
+            <span class="hc-m-label">Métrica Aceleradora</span>
+            <span class="hc-m-value" id="pdTempo">—</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Timeline -->
+      <div class="card timeline-card">
+        <div class="card-head">
+          <h3>Evolução das Demandas por Mês</h3>
+          <div class="legend">
+            <span class="lg"><i class="sw" style="background:linear-gradient(180deg,#4dd4ff,#2a7ff0)"></i>Demandas abertas</span>
+            <span class="lg"><i class="sw" style="background:linear-gradient(180deg,#ffd166,#f0932b)"></i>Volume empenhado (R$ mi)</span>
+          </div>
+        </div>
+        <div class="chart-wrap" id="chartTimeline"></div>
+        <div class="tl-track-wrap">
+          <div class="tl-track" id="tlTrack"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="marco-strip" id="marcoStrip"></div>
+  </section>
+
+  <!-- ===================== PAINEL 2 ===================== -->
+  <section class="panel" id="painel2">
+    <div class="panel-head">
+      <span class="panel-num">Painel 2</span>
+      <div>
+        <h2>Panorama Atual</h2>
+        <p class="panel-desc">Indicadores consolidados de adesão, volume e capilaridade</p>
+      </div>
+    </div>
+
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <div class="card table-card">
+      <div class="card-head">
+        <h3>Tabela Detalhada de Demandas</h3>
+        <div class="table-tools">
+          <div class="seg" id="viewSeg">
+            <button class="active" data-view="agg">Por demanda</button>
+            <button data-view="item">Por item</button>
+          </div>
+          <select id="fAno" class="sel"><option value="">Todos os anos</option></select>
+          <select id="fGer" class="sel"><option value="">Todas as gerenciadoras</option></select>
+          <input id="fBusca" class="inp" type="search" placeholder="Buscar código, objeto ou unidade…">
+          <button id="btnCsv" class="btn">⭳ CSV</button>
+        </div>
+      </div>
+      <div class="table-meta" id="tableMeta"></div>
+      <div class="table-scroll">
+        <table class="tbl" id="tbl">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="pager" id="pager"></div>
+    </div>
+  </section>
+
+  <!-- ===================== PAINEL 3 ===================== -->
+  <section class="panel" id="painel3">
+    <div class="panel-head">
+      <span class="panel-num">Painel 3</span>
+      <div>
+        <h2>Engajamento e Alcance Institucional</h2>
+        <p class="panel-desc">Ranking das unidades da USP que mais abriram demandas para adesão</p>
+      </div>
+    </div>
+
+    <div class="p3-grid">
+      <div class="card">
+        <div class="card-head">
+          <h3>Top Unidades Gerenciadoras</h3>
+          <span class="hint">Nº de demandas abertas</span>
+        </div>
+        <div class="chart-wrap" id="chartGer"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3>Unidades Aderentes por Volume Empenhado</h3>
+          <span class="hint">Top 10 · R$ empenhado</span>
+        </div>
+        <div class="chart-wrap" id="chartAder"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== PAINEL 4 ===================== -->
+  <section class="panel" id="painel4">
+    <div class="panel-head">
+      <span class="panel-num">Painel 4</span>
+      <div>
+        <h2>Indicadores Enriquecidos</h2>
+        <p class="panel-desc">Economia de escala, agilidade do processo e perfil de demanda</p>
+      </div>
+    </div>
+
+    <div class="enr-grid">
+      <div class="card">
+        <div class="card-head"><h3>Economia de Escala</h3><span class="hint">R$ por processo</span></div>
+        <div class="escala" id="escalaBox"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>Tempo Médio do Processo</h3><span class="hint">Dias entre cadastro e empenho</span></div>
+        <div class="chart-wrap short" id="chartTempo"></div>
+        <div class="stat-row" id="tempoStats"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>Categorias de Maior Demanda</h3><span class="hint">Distribuição por grupo de objeto</span></div>
+        <div class="donut-wrap">
+          <div class="donut" id="chartCat"></div>
+          <ul class="donut-legend" id="catLegend"></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <p>Dados extraídos de <code>dados.json</code> — escopo CLIP da Adesão a Compras da USP.</p>
+    <p class="foot-sub" id="footSub"></p>
+  </footer>
+</main>
+
+<div class="tip" id="tip" role="tooltip" aria-hidden="true"></div>
+
+<script src="dados.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
